@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHUC SINH MOUNTAIN HILL FARM - SCADA IoT Nông Nghiệp</title>
+    <title>PHUC SINH MOUNTAIN HILL FARM - SCADA Chuẩn Theo Sơ Đồ Thực Tế</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -330,37 +330,37 @@
                         </filter>
                     </defs>
 
-                    <!-- 1. CÂY HÀNG RÀO (OUTER FENCE BOUNDARY) -->
+                    <!-- 1. CÂY HÀNG RÀO (OUTER FENCE BOUNDARY TRÙ KHÍT ẢNH) -->
                     <g id="layer-fence" data-category="fence">
-                        <polygon points="365,38 492,265 445,305 398,358 475,418 552,472 645,532 722,522 768,510 792,542 842,642 668,758 632,762 608,795 505,875 468,818 422,762 325,632 232,488 168,352 152,272 158,208 212,155 292,98"
-                            fill="#3d6848" stroke="#6b8e78" stroke-width="8" stroke-linejoin="round" opacity="0.85"/>
+                        <polygon points="280,65 385,210 350,260 185,385 410,725 480,820 665,685 725,640 685,490 415,290"
+                            fill="#3d6848" stroke="#6b8e78" stroke-width="9" stroke-linejoin="round" opacity="0.85"/>
                     </g>
 
                     <!-- 2. ĐƯỜNG PHÂN LÔ (INTERNAL ROAD NETWORK) -->
                     <g id="layer-roads" data-category="road">
                         <path d="
-                            M 212,155 L 468,818
-                            M 292,98 L 425,305
-                            M 152,272 L 365,142
-                            M 212,155 L 425,305
-                            M 205,405 L 425,305
-                            M 260,500 L 375,420
-                            M 290,550 L 405,470
-                            M 330,600 L 555,475
-                            M 370,660 L 490,580
-                            M 425,735 L 755,525
-                            M 540,535 L 610,630
-                            M 505,565 L 570,660
-                            M 470,595 L 530,685
-                            M 595,505 L 640,580
+                            M 290,180 L 410,725
+                            M 345,115 L 435,320
+                            M 185,295 L 365,190
+                            M 290,180 L 435,320
+                            M 225,395 L 435,320
+                            M 275,485 L 390,405
+                            M 310,540 L 420,460
+                            M 350,600 L 575,475
+                            M 390,665 L 515,585
+                            M 445,745 L 755,535
+                            M 555,545 L 625,635
+                            M 520,575 L 585,665
+                            M 485,605 L 545,695
+                            M 605,515 L 655,590
                         " stroke="#d4d73b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.92"/>
                     </g>
 
                     <!-- 3. FACTORY & SUPPORT ZONES -->
                     <g id="zone-factory" data-category="factory" onclick="selectSupportZone('factory')" class="farm-zone">
-                        <polygon points="425,305 472,265 735,438 765,498 712,505 632,495 548,448 390,355" fill="#94a3b8" fill-opacity="0.38" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 2"/>
-                        <polygon points="465,322 495,292 692,418 662,452" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                        <g transform="translate(585, 392)">
+                        <polygon points="350,260 705,455 675,515 320,320" fill="#94a3b8" fill-opacity="0.38" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 2"/>
+                        <polygon points="415,290 445,260 635,385 605,420" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                        <g transform="translate(525, 365)">
                             <circle cx="0" cy="0" r="12" fill="#e11d48" stroke="#ffffff" stroke-width="2"/>
                             <circle cx="0" cy="0" r="4" fill="#ffffff"/>
                             <text x="16" y="5" fill="#ffffff" font-size="13" font-weight="800" style="text-shadow: 0 2px 4px rgba(0,0,0,0.95);">Công Ty Cổ Phần Phúc Sinh Sơn La</text>
@@ -368,42 +368,42 @@
                     </g>
 
                     <g id="zone-wastewater" data-category="wastewater" onclick="selectSupportZone('wastewater')" class="farm-zone">
-                        <polygon points="380,355 425,315 450,375 535,430 505,475 365,395" fill="#4f67b8" fill-opacity="0.88" stroke="#93c5fd" stroke-width="1.8"/>
-                        <text x="435" y="388" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700" transform="rotate(33 435 388)">Khu xử lý nước thải</text>
+                        <polygon points="275,320 395,410 355,465 245,370" fill="#4f67b8" fill-opacity="0.88" stroke="#93c5fd" stroke-width="1.8"/>
+                        <text x="320" y="388" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700" transform="rotate(35 320 388)">Khu xử lý nước thải</text>
                     </g>
 
                     <g id="zone-nursery" data-category="nursery" onclick="selectSupportZone('nursery')" class="farm-zone">
-                        <polygon points="510,475 540,435 630,498 585,528 502,562 480,525" fill="#72b07d" fill-opacity="0.9" stroke="#bbf7d0" stroke-width="1.8"/>
-                        <text x="545" y="502" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700" transform="rotate(-32 545 502)">Vườn ươm</text>
+                        <polygon points="435,460 500,410 565,475 500,525" fill="#72b07d" fill-opacity="0.9" stroke="#bbf7d0" stroke-width="1.8"/>
+                        <text x="500" y="470" text-anchor="middle" fill="#ffffff" font-size="11.5" font-weight="700">Vườn ươm</text>
                     </g>
 
                     <g id="zone-mountain-hill" data-category="mountain_hill" onclick="selectSupportZone('mountain_hill')" class="farm-zone">
-                        <polygon points="635,495 700,482 756,478 780,528 730,545 650,525" fill="#d896c8" fill-opacity="0.88" stroke="#fbcfe8" stroke-width="1.8"/>
-                        <text x="708" y="514" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Mountain Hill</text>
+                        <polygon points="535,485 645,455 665,495 555,525" fill="#d896c8" fill-opacity="0.88" stroke="#fbcfe8" stroke-width="1.8"/>
+                        <text x="600" y="508" text-anchor="middle" fill="#ffffff" font-size="11.5" font-weight="700">Mountain Hill</text>
                     </g>
 
                     <g id="zone-water-tank" data-category="water" onclick="selectSupportZone('water_tank')" class="farm-zone">
-                        <polygon points="205,405 265,365 320,445 260,488" fill="url(#waterTexture)" stroke="#67e8f9" stroke-width="2"/>
-                        <text x="262" y="430" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700" transform="rotate(32 262 430)">Bể Nước</text>
+                        <polygon points="145,385 195,355 245,435 190,475" fill="url(#waterTexture)" stroke="#67e8f9" stroke-width="2"/>
+                        <text x="195" y="420" text-anchor="middle" fill="#ffffff" font-size="11.5" font-weight="700" transform="rotate(30 195 420)">Bể Nước</text>
                     </g>
 
                     <g id="zone-water-lake" data-category="water" onclick="selectSupportZone('water_lake')" class="farm-zone">
-                        <polygon points="575,662 715,572 740,602 732,662 682,695 635,698 602,728 580,705" fill="url(#waterTexture)" stroke="#67e8f9" stroke-width="2.2"/>
-                        <text x="665" y="652" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="800" transform="rotate(-18 665 652)">Hồ nước</text>
+                        <polygon points="485,615 615,535 645,625 515,695" fill="url(#waterTexture)" stroke="#67e8f9" stroke-width="2.2"/>
+                        <text x="565" y="618" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="800">Hồ nước</text>
                     </g>
 
                     <g id="zone-pine" data-category="pine" onclick="selectSupportZone('pine')" class="farm-zone">
-                        <polygon points="555,702 602,728 642,698 732,662 742,688 655,745 615,750 582,775" fill="url(#pineTexture)" stroke="#86efac" stroke-width="1.5"/>
-                        <text x="639" y="738" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Rừng thông</text>
+                        <polygon points="475,695 645,625 665,665 495,745" fill="url(#pineTexture)" stroke="#86efac" stroke-width="1.5"/>
+                        <text x="570" y="700" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Rừng thông</text>
                     </g>
 
                     <g id="zone-byproduct" data-category="byproduct" onclick="selectSupportZone('byproduct')" class="farm-zone">
-                        <polygon points="455,805 510,758 572,738 605,780 492,862" fill="#656d2a" fill-opacity="0.92" stroke="#bef264" stroke-width="1.8"/>
-                        <text x="525" y="795" text-anchor="middle" fill="#ffffff" font-size="11.5" font-weight="700">Khu Tập Kết</text>
-                        <text x="525" y="812" text-anchor="middle" fill="#fef08a" font-size="11.5" font-weight="700">Phụ Phẩm</text>
+                        <polygon points="380,745 460,715 515,785 435,825" fill="#656d2a" fill-opacity="0.92" stroke="#bef264" stroke-width="1.8"/>
+                        <text x="448" y="765" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700">Khu Tập Kết</text>
+                        <text x="448" y="780" text-anchor="middle" fill="#fef08a" font-size="11" font-weight="700">Phụ Phẩm</text>
                     </g>
 
-                    <!-- 4. DYNAMIC PIPELINES & 19 COFFEE PLOTS (NON-OVERLAPPING) -->
+                    <!-- 4. 19 COFFEE PLOTS (CHUẨN 100% NHƯ TRÊN ẢNH SƠ ĐỒ MẪU) -->
                     <g id="waterPipelinesLayer" pointer-events="none"></g>
                     <g id="coffeePlotsLayer" data-category="coffee"></g>
                     <g id="plotOverlaysLayer" pointer-events="none"></g>
@@ -545,88 +545,88 @@
     <!-- APPLICATION JAVASCRIPT -->
     <script>
         /**
-         * 19 COFFEE PLOTS DATA WITH FIXED NON-OVERLAPPING COORDINATES & CORRECT ALIGNMENT FOR LO 06 & LO 08
+         * 19 COFFEE PLOTS DATA WITH EXACT VISUAL ALIGNMENT TO THE SAMPLE MAP IMAGE
          */
         const coffeePlotsData = [
             {
                 id: "LO_01", name: "Lô 01", area: "0.78 Ha", crop: "Cà phê THA1", year: "2024", trees: "2,142 cây", spacing: "1.2 x 1.7 m", rows: "Chưa cập nhật", note: "Khu vực phía Đông Bắc trang trại",
-                points: "305,102 365,65 480,240 420,278", center: { x: 392, y: 171 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 25.1, moisture: 61.0, pumpOn: false, flowRate: 21.0
+                points: "325,120 380,80 475,225 415,260", center: { x: 398, y: 171 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 25.1, moisture: 61.0, pumpOn: false, flowRate: 21.0
             },
             {
                 id: "LO_02.1", name: "Lô 02.1", area: "0.67 Ha", crop: "Cà phê THA1", year: "2023", trees: "2,240 cây", spacing: "1 x 2 m", rows: "63 hàng", note: "Giáp ranh sườn Tây Bắc",
-                points: "155,255 205,155 245,180 272,235 180,295", center: { x: 212, y: 222 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 24.2, moisture: 66.0, pumpOn: false, flowRate: 18.5
+                points: "165,240 220,150 255,175 285,225 195,285", center: { x: 224, y: 215 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 24.2, moisture: 66.0, pumpOn: false, flowRate: 18.5
             },
             {
                 id: "LO_02.2", name: "Lô 02.2", area: "0.34 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "776 cây", spacing: "1 x 2 m", rows: "32 hàng", note: "Đỉnh phía Bắc trang trại",
-                points: "212,148 280,95 315,150 245,192", center: { x: 263, y: 146 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 24.0, moisture: 68.5, pumpOn: false, flowRate: 12.0
+                points: "222,142 290,92 325,145 255,188", center: { x: 273, y: 142 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 24.0, moisture: 68.5, pumpOn: false, flowRate: 12.0
             },
             {
                 id: "LO_03", name: "Lô 03", area: "1.48 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "3,898 cây", spacing: "1.5 x 2 m", rows: "70 hàng", note: "Lô trung tâm diện tích lớn nhất",
-                points: "250,202 318,158 412,282 302,370", center: { x: 320, y: 253 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 25.6, moisture: 58.4, pumpOn: true, flowRate: 34.0
+                points: "260,195 325,152 410,270 305,348", center: { x: 325, y: 242 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 25.6, moisture: 58.4, pumpOn: true, flowRate: 34.0
             },
             {
                 id: "LO_04", name: "Lô 04", area: "0.39 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "1,098 cây", spacing: "1.5 x 2 m", rows: "27 hàng", note: "Phía Bắc Bể Nước",
-                points: "160,302 205,278 252,342 202,375 168,330", center: { x: 197, y: 327 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 24.5, moisture: 65.2, pumpOn: false, flowRate: 14.0
+                points: "172,292 215,268 262,330 215,360 182,318", center: { x: 211, y: 317 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 24.5, moisture: 65.2, pumpOn: false, flowRate: 14.0
             },
             {
                 id: "LO_05.1", name: "Lô 05.1", area: "0.28 Ha", crop: "Cà phê THA1", year: "2020", trees: "1,143 cây", spacing: "1 x 2 m", rows: "29 hàng", note: "Giáp lô 3 (17 hàng), lô 7 (12 hàng)",
-                points: "308,375 390,312 410,338 328,398", center: { x: 359, y: 356 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 25.8, moisture: 54.0, pumpOn: false, flowRate: 11.5
+                points: "312,352 392,292 412,315 330,372", center: { x: 361, y: 333 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 25.8, moisture: 54.0, pumpOn: false, flowRate: 11.5
             },
             {
                 id: "LO_05.2", name: "Lô 05.2", area: "0.19 Ha", crop: "Cà phê Starmaya", year: "2023", trees: "446 cây", spacing: "1 x 2 m", rows: "14 hàng", note: "Giáp Khu xử lý nước thải và Lô 07",
-                points: "332,405 370,380 405,420 358,450", center: { x: 366, y: 414 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 25.3, moisture: 62.0, pumpOn: false, flowRate: 9.5
+                points: "338,380 375,355 410,392 362,420", center: { x: 371, y: 387 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 25.3, moisture: 62.0, pumpOn: false, flowRate: 9.5
             },
             {
-                id: "LO_06", name: "Lô 06", area: "0.67 Ha", crop: "Starmaya & THA1", year: "2020", trees: "2,737 cây", spacing: "1 x 2 m", rows: "52 hàng", note: "Đã tách biệt hoàn toàn, không đè lấn",
-                points: "212,390 275,348 312,412 250,455", center: { x: 262, y: 401 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 24.8, moisture: 70.1, pumpOn: false, flowRate: 10.0
+                id: "LO_06", name: "Lô 06", area: "0.67 Ha", crop: "Starmaya & THA1", year: "2020", trees: "2,737 cây", spacing: "1 x 2 m", rows: "52 hàng", note: "Trùng khít vị trí Lô 6 trên ảnh mẫu",
+                points: "228,375 288,335 322,392 262,432", center: { x: 275, y: 384 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 24.8, moisture: 70.1, pumpOn: false, flowRate: 10.0
             },
             {
                 id: "LO_07", name: "Lô 07", area: "0.60 Ha", crop: "Cà phê THA1", year: "2020", trees: "2,009 cây", spacing: "1 x 2 m", rows: "38 hàng", note: "Trung tâm sườn giữa trang trại",
-                points: "362,458 422,415 475,478 412,525", center: { x: 418, y: 469 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 25.9, moisture: 57.5, pumpOn: false, flowRate: 19.0
+                points: "368,428 425,385 475,442 418,485", center: { x: 422, y: 435 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 25.9, moisture: 57.5, pumpOn: false, flowRate: 19.0
             },
             {
                 id: "LO_07.1", name: "Vườn ươm", area: "0.18 Ha", crop: "Vườn Ươm & Cây ăn quả", year: "2023", trees: "70 cây ăn quả + Vườn ươm", spacing: "Tiêu chuẩn", rows: "-", note: "0.08Ha Cây ăn quả + 0.10Ha Vườn ươm",
-                points: "385,338 458,295 508,350 435,392", center: { x: 446, y: 344 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 24.8, moisture: 75.0, pumpOn: false, flowRate: 10.0, customColor: "#72b07d"
+                points: "392,315 460,272 505,322 438,365", center: { x: 449, y: 318 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 24.8, moisture: 75.0, pumpOn: false, flowRate: 10.0, customColor: "#72b07d"
             },
             {
-                id: "LO_08.2", name: "Lô 08.2", area: "0.41 Ha", crop: "Cà phê Catimor", year: "2020", trees: "2,190 cây", spacing: "0.9 x 1.5 m", rows: "37 hàng", note: "Đã căn chỉnh chuẩn xác không bị đè lấn",
-                points: "238,465 298,422 338,478 278,525", center: { x: 288, y: 472 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 24.9, moisture: 63.4, pumpOn: false, flowRate: 15.0
+                id: "LO_08.2", name: "Lô 08.2", area: "0.41 Ha", crop: "Cà phê Catimor", year: "2020", trees: "2,190 cây", spacing: "0.9 x 1.5 m", rows: "37 hàng", note: "Trùng khít vị trí Lô 8.2 trên ảnh mẫu",
+                points: "252,442 312,402 348,452 288,492", center: { x: 300, y: 447 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 24.9, moisture: 63.4, pumpOn: false, flowRate: 15.0
             },
             {
                 id: "LO_08.1", name: "Lô 08.1", area: "0.32 Ha", crop: "Cà phê THA1", year: "2023", trees: "1,149 cây", spacing: "1.2 x 1.7 m", rows: "46 hàng", note: "Nằm giữa Lô 08.2 và Lô 10",
-                points: "282,535 342,488 382,542 322,592", center: { x: 332, y: 539 }, waterSource: { x: 260, y: 425, name: "Bể Nước" }, temp: 25.0, moisture: 64.0, pumpOn: false, flowRate: 13.5
+                points: "288,505 348,462 385,512 325,555", center: { x: 336, y: 508 }, waterSource: { x: 195, y: 415, name: "Bể Nước" }, temp: 25.0, moisture: 64.0, pumpOn: false, flowRate: 13.5
             },
             {
                 id: "LO_09.1", name: "Lô 09.1", area: "0.18 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "703 cây", spacing: "1 x 2 m", rows: "43 hàng", note: "Dải lô 09 phía Tây Nam",
-                points: "438,585 468,565 515,642 485,665", center: { x: 476, y: 614 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 24.9, moisture: 65.5, pumpOn: false, flowRate: 9.0
+                points: "435,542 462,525 510,592 482,612", center: { x: 472, y: 568 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 24.9, moisture: 65.5, pumpOn: false, flowRate: 9.0
             },
             {
                 id: "LO_09.2", name: "Lô 09.2", area: "0.28 Ha", crop: "Cà phê Marsellesa", year: "2020", trees: "1,210 cây", spacing: "1 x 2 m", rows: "46 hàng", note: "Giống cà phê đặc sản Marsellesa",
-                points: "468,560 498,535 550,610 520,638", center: { x: 509, y: 586 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 24.6, moisture: 69.0, pumpOn: false, flowRate: 12.0
+                points: "462,520 490,498 538,565 510,588", center: { x: 500, y: 543 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 24.6, moisture: 69.0, pumpOn: false, flowRate: 12.0
             },
             {
                 id: "LO_09.3", name: "Lô 09.3", area: "0.26 Ha", crop: "Cà phê THA1", year: "2020", trees: "833 cây", spacing: "1 x 2 m", rows: "41 hàng", note: "Giáp hồ điều hòa",
-                points: "498,535 528,510 580,585 550,612", center: { x: 539, y: 560 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 24.7, moisture: 67.3, pumpOn: false, flowRate: 11.5
+                points: "490,498 518,475 565,542 538,565", center: { x: 528, y: 520 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 24.7, moisture: 67.3, pumpOn: false, flowRate: 11.5
             },
             {
                 id: "LO_09.4", name: "Lô 09.4", area: "0.24 Ha", crop: "Cà phê H1", year: "2021", trees: "1,112 cây", spacing: "1 x 2 m", rows: "42 hàng", note: "Phía Bắc cụm lô 09, giống H1",
-                points: "525,510 590,472 620,510 555,548", center: { x: 572, y: 510 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 25.2, moisture: 64.8, pumpOn: false, flowRate: 11.0
+                points: "518,475 575,438 602,472 545,510", center: { x: 560, y: 474 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 25.2, moisture: 64.8, pumpOn: false, flowRate: 11.0
             },
             {
                 id: "LO_10", name: "Lô 10", area: "0.63 Ha", crop: "Cà phê THA1", year: "2023", trees: "2,262 cây", spacing: "1.2 x 1.7 m", rows: "45 hàng", note: "Cực Tây Nam của trang trại",
-                points: "360,635 422,588 472,662 432,745 398,705", center: { x: 418, y: 659 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 25.4, moisture: 59.2, pumpOn: false, flowRate: 20.0
+                points: "355,575 415,532 465,602 425,675 390,638", center: { x: 413, y: 605 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 25.4, moisture: 59.2, pumpOn: false, flowRate: 20.0
             },
             {
                 id: "LO_11", name: "Lô 11-2", area: "0.37 Ha", crop: "Cà phê THA1", year: "2025", trees: "452 cây", spacing: "1 x 2 m", rows: "14 hàng", note: "Trên bản đồ ký hiệu 11-2, trồng mới 2025",
-                points: "595,530 660,495 720,495 625,562", center: { x: 650, y: 520 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 24.4, moisture: 71.2, pumpOn: false, flowRate: 11.0
+                points: "572,492 632,458 688,458 602,525", center: { x: 624, y: 483 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 24.4, moisture: 71.2, pumpOn: false, flowRate: 11.0
             },
             {
                 id: "LO_11.1", name: "Lô 11.1", area: "0.55 Ha", crop: "Cây ăn quả", year: "2025", trees: "300 cây", spacing: "Quy hoạch", rows: "-", note: "Khu cây ăn quả phía Đông Hồ nước",
-                points: "702,530 762,502 795,592 718,635", center: { x: 744, y: 565 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 24.1, moisture: 74.0, pumpOn: true, flowRate: 17.5
+                points: "680,488 738,462 768,542 692,578", center: { x: 720, y: 518 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 24.1, moisture: 74.0, pumpOn: true, flowRate: 17.5
             },
             {
                 id: "LO_13", name: "Lô 13", area: "0.20 Ha", crop: "Cà phê THA1", year: "2024 - 2025", trees: "660 cây", spacing: "1.2 x 1.7 m", rows: "-", note: "Gồm LO_13.1 (0.16Ha) & LO_13.2 (0.04Ha)",
-                points: "455,715 532,668 552,695 470,742", center: { x: 502, y: 705 }, waterSource: { x: 655, y: 635, name: "Hồ nước" }, temp: 25.5, moisture: 60.5, pumpOn: false, flowRate: 8.5
+                points: "445,645 515,602 532,625 462,670", center: { x: 488, y: 636 }, waterSource: { x: 565, y: 618, name: "Hồ nước" }, temp: 25.5, moisture: 60.5, pumpOn: false, flowRate: 8.5
             }
         ];
 
