@@ -1,1019 +1,953 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PHUC SINH MOUNTAIN HILL FARM - SCADA Chính Xác</title>
-  <style>
-    :root {
-      --bg-dark: #0b131e;
-      --panel-bg: rgba(16, 26, 40, 0.94);
-      --border-color: rgba(255, 255, 255, 0.12);
-      --accent-blue: #0ea5e9;
-      --text-main: #f1f5f9;
-      --text-sub: #94a3b8;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHUC SINH MOUNTAIN HILL FARM - Hệ Thống Giám Sát & Điều Khiển Tưới IoT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        psBlue: '#0f2942',
+                        psRed: '#e11d48',
+                        coffeeGreen: '#22c55e',
+                    }
+                }
+            }
+        }
+    </script>
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(34, 197, 94, 0.8); }
 
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      height: 100vh;
-      overflow: hidden;
-      display: grid;
-      grid-template-columns: 1fr 370px;
-    }
+        .satellite-canvas {
+            background-color: #142218;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(34, 65, 39, 0.6) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(45, 58, 42, 0.5) 0%, transparent 45%),
+                radial-gradient(circle at 60% 80%, rgba(28, 45, 34, 0.7) 0%, transparent 55%),
+                repeating-linear-gradient(45deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 2px, transparent 2px, transparent 8px);
+        }
 
-    /* KHU VỰC BẢN ĐỒ TRUNG TÂM */
-    .map-stage {
-      position: relative;
-      width: 100%;
-      height: 100vh;
-      background: #0b131e;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        .farm-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            vector-effect: non-scaling-stroke;
+        }
+        .farm-zone:hover {
+            filter: brightness(1.18) drop-shadow(0 0 8px rgba(255, 255, 255, 0.45));
+            stroke: #ffffff !important;
+            stroke-width: 2.5px !important;
+        }
+        .farm-zone.selected-zone {
+            stroke: #facc15 !important;
+            stroke-width: 3.5px !important;
+            filter: brightness(1.22) drop-shadow(0 0 12px rgba(250, 204, 21, 0.65));
+        }
 
-    /* Thanh thời tiết & công cụ phía trên */
-    .top-bar {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      z-index: 20;
-      pointer-events: none;
-    }
+        @keyframes pulse-water-border {
+            0%, 100% { stroke: #38bdf8; stroke-width: 3px; filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.85)); }
+            50% { stroke: #ffffff; stroke-width: 4px; filter: drop-shadow(0 0 16px rgba(14, 165, 233, 1)); }
+        }
+        .farm-zone.pump-active {
+            animation: pulse-water-border 1.6s infinite ease-in-out;
+            fill: url(#irrigatingPattern) !important;
+        }
 
-    .weather-card, .toolbar-card {
-      pointer-events: auto;
-      background: var(--panel-bg);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
-    }
+        @keyframes alert-pulse {
+            0%, 100% { stroke: #ef4444; stroke-width: 3px; }
+            50% { stroke: #fde047; stroke-width: 4px; }
+        }
+        .farm-zone.sensor-alert:not(.pump-active) {
+            animation: alert-pulse 1.5s infinite;
+        }
 
-    .weather-loc {
-      display: flex;
-      flex-direction: column;
-    }
-    .weather-loc strong {
-      font-size: 13px;
-      color: #38bdf8;
-      letter-spacing: 0.4px;
-    }
-    .weather-loc span {
-      font-size: 11px;
-      color: var(--text-sub);
-    }
+        @keyframes pipe-flow {
+            to { stroke-dashoffset: -40; }
+        }
+        .water-pipe-active {
+            stroke-dasharray: 8 6;
+            animation: pipe-flow 0.9s linear infinite;
+        }
 
-    .weather-metrics {
-      display: flex;
-      gap: 14px;
-      font-size: 13px;
-      border-left: 1px solid var(--border-color);
-      padding-left: 14px;
-    }
-    .weather-metrics div {
-      display: flex;
-      flex-direction: column;
-    }
-    .weather-metrics small {
-      font-size: 10px;
-      color: var(--text-sub);
-    }
-    .weather-metrics b {
-      font-size: 14px;
-      color: #fff;
-    }
+        @keyframes water-ripple {
+            0% { r: 3; opacity: 0.95; stroke-width: 2.5px; }
+            100% { r: 26; opacity: 0; stroke-width: 0.5px; }
+        }
+        .ripple-circle { animation: water-ripple 2s cubic-bezier(0.1, 0.5, 0.3, 1) infinite; }
+        .ripple-circle-delay { animation: water-ripple 2s cubic-bezier(0.1, 0.5, 0.3, 1) 1s infinite; }
 
-    .btn {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      border: 1px solid var(--border-color);
-      padding: 7px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-    }
-    .btn.active {
-      background: var(--accent-blue);
-      border-color: #38bdf8;
-      color: #fff;
-      font-weight: 600;
-    }
+        @keyframes spin-fast {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .spin-pump {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: spin-fast 1.2s linear infinite;
+        }
 
-    /* Chú giải góc trái dưới */
-    .legend-box {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(8px);
-      color: #f8fafc;
-      border: 1px solid var(--border-color);
-      padding: 12px 15px;
-      border-radius: 10px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.45);
-      z-index: 20;
-      width: 235px;
-      font-size: 11.5px;
-    }
-    .legend-box h4 {
-      margin-bottom: 8px;
-      font-size: 13px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 4px;
-      color: #38bdf8;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0;
-      font-weight: 500;
-    }
-    .legend-swatch {
-      width: 16px;
-      height: 11px;
-      border-radius: 3px;
-      display: inline-block;
-      border: 1px solid rgba(255,255,255,0.3);
-    }
+        @keyframes rain-fall {
+            0% { transform: translateY(-100px) translateX(20px); opacity: 0; }
+            30% { opacity: 0.6; }
+            100% { transform: translateY(800px) translateX(-120px); opacity: 0; }
+        }
+        .rain-line { animation: rain-fall 1.1s linear infinite; }
 
-    /* SVG SƠ ĐỒ VỆ TINH TRUNG TÂM */
-    svg#farm-svg {
-      width: 98%;
-      height: 96%;
-      max-width: 1280px;
-      max-height: 920px;
-      user-select: none;
-      border-radius: 12px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.7);
-    }
-
-    .plot-poly {
-      stroke: #facc15;
-      stroke-width: 1.8;
-      cursor: pointer;
-      transition: fill-opacity 0.3s ease, filter 0.25s ease, stroke 0.2s;
-    }
-    .plot-poly:hover {
-      fill-opacity: 0.7 !important;
-      stroke: #ffffff;
-      stroke-width: 2.8;
-    }
-    .plot-poly.pumping {
-      stroke: #38bdf8 !important;
-      stroke-width: 3.5 !important;
-      animation: pulseWater 1.4s infinite alternate;
-    }
-
-    @keyframes pulseWater {
-      0% { fill-opacity: 0.5; filter: drop-shadow(0 0 4px #0ea5e9); }
-      100% { fill-opacity: 0.85; filter: drop-shadow(0 0 12px #38bdf8); }
-    }
-
-    .zone-poly {
-      cursor: pointer;
-      transition: filter 0.25s;
-    }
-    .zone-poly:hover {
-      filter: brightness(1.2);
-    }
-
-    .plot-label {
-      font-size: 10.5px;
-      font-weight: 700;
-      fill: #ffffff;
-      text-anchor: middle;
-      pointer-events: none;
-      paint-order: stroke;
-      stroke: rgba(0, 0, 0, 0.9);
-      stroke-width: 3.2px;
-    }
-    .sensor-pill {
-      font-size: 9px;
-      font-weight: 700;
-      fill: #e0f2fe;
-      text-anchor: middle;
-      pointer-events: none;
-      paint-order: stroke;
-      stroke: #0f172a;
-      stroke-width: 3.2px;
-    }
-
-    /* Đường ống dẫn nước động */
-    .water-pipe {
-      fill: none;
-      stroke: #38bdf8;
-      stroke-width: 3;
-      stroke-dasharray: 6 6;
-      animation: pipeFlow 0.7s linear infinite;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .water-pipe.active {
-      opacity: 0.95;
-    }
-    @keyframes pipeFlow {
-      to { stroke-dashoffset: -24; }
-    }
-
-    /* Cột phải: Thông tin Trang trại & Điều khiển Bơm */
-    .sidebar {
-      background: #0f172a;
-      border-left: 1px solid var(--border-color);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-y: auto;
-      padding: 18px;
-      gap: 16px;
-    }
-
-    .brand-header {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-    }
-    .brand-header h1 {
-      font-size: 16px;
-      color: #38bdf8;
-      letter-spacing: 0.6px;
-    }
-    .brand-header h2 {
-      font-size: 13px;
-      color: #e2e8f0;
-      margin-top: 2px;
-    }
-    .brand-meta {
-      margin-top: 8px;
-      font-size: 12px;
-      color: var(--text-sub);
-      line-height: 1.5;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .stat-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 10px 12px;
-    }
-    .stat-card small {
-      font-size: 11px;
-      color: var(--text-sub);
-    }
-    .stat-card strong {
-      display: block;
-      font-size: 16px;
-      margin-top: 3px;
-      color: #fff;
-    }
-
-    .pump-list-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 600;
-      color: #cbd5e1;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .plot-cards-container {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-
-    .mini-plot-row {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 9px 11px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .mini-plot-row:hover {
-      background: rgba(255,255,255,0.08);
-    }
-    .mini-plot-info strong {
-      font-size: 12.5px;
-      color: #f8fafc;
-    }
-    .mini-plot-info span {
-      display: block;
-      font-size: 11px;
-      color: var(--text-sub);
-      margin-top: 2px;
-    }
-
-    .pump-switch {
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      border: none;
-      cursor: pointer;
-      background: #334155;
-      color: #cbd5e1;
-      transition: all 0.2s;
-    }
-    .pump-switch.on {
-      background: #0284c7;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
-    }
-
-    /* MODAL POPUP THÔNG TIN LÔ CHI TIẾT */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(5px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-    }
-    .modal-backdrop.open {
-      display: flex;
-    }
-    .modal-box {
-      background: #111c2d;
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      width: 92%;
-      max-width: 520px;
-      border-radius: 16px;
-      padding: 22px;
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7);
-      animation: popIn 0.2s ease-out;
-    }
-    @keyframes popIn {
-      from { transform: scale(0.92); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-    }
-    .modal-header h3 {
-      font-size: 18px;
-      color: #38bdf8;
-    }
-    .modal-header p {
-      font-size: 12px;
-      color: var(--text-sub);
-      margin-top: 3px;
-    }
-    .close-btn {
-      background: transparent;
-      border: none;
-      color: #94a3b8;
-      font-size: 22px;
-      cursor: pointer;
-      line-height: 1;
-    }
-
-    .info-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 16px;
-      font-size: 13px;
-    }
-    .info-table th, .info-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      text-align: left;
-    }
-    .info-table th {
-      color: var(--text-sub);
-      font-weight: 500;
-      width: 42%;
-    }
-    .info-table td {
-      color: #f8fafc;
-      font-weight: 600;
-    }
-
-    .sensor-live-box {
-      background: rgba(14, 165, 233, 0.08);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 10px;
-      padding: 12px;
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    .sensor-live-box span {
-      font-size: 11px;
-      color: var(--text-sub);
-      display: block;
-    }
-    .sensor-live-box strong {
-      font-size: 16px;
-      color: #38bdf8;
-      margin-top: 4px;
-      display: block;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-  </style>
+        .dimmed-zone {
+            opacity: 0.18 !important;
+            filter: grayscale(80%);
+        }
+    </style>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden select-none h-screen flex flex-col">
 
-  <!-- KHU VỰC BẢN ĐỒ VỆ TINH TRUNG TÂM -->
-  <div class="map-stage">
-    <div class="top-bar">
-      <!-- Thời tiết thực tế Chiềng Mung - Sơn La -->
-      <div class="weather-card">
-        <div class="weather-loc">
-          <strong>📍 CHIỀNG MUNG - SƠN LA</strong>
-          <span id="weather-desc">Đang đồng bộ thời tiết thực tế...</span>
+    <!-- TOP SCADA HEADER BAR -->
+    <header class="h-16 bg-slate-900/95 border-b border-slate-800 px-4 flex items-center justify-between z-30 shrink-0 shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-md shadow-emerald-900/50 border border-emerald-400/30">
+                <i class="fa-solid fa-seedling text-white text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-extrabold text-sm md:text-base tracking-wide text-white uppercase">
+                        PHUC SINH MOUNTAIN HILL FARM
+                    </h1>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        SCADA ONLINE
+                    </span>
+                </div>
+                <div class="flex items-center gap-3 text-xs text-slate-400 font-mono">
+                    <span><i class="fa-solid fa-vector-square text-emerald-400 mr-1"></i>Tổng diện tích: <strong class="text-slate-200">17.9 ha</strong></span>
+                    <span class="hidden md:inline">|</span>
+                    <span class="hidden md:inline"><i class="fa-solid fa-location-crosshairs text-rose-400 mr-1"></i>Tọa độ: <strong class="text-slate-200">21.254283, 103.960983</strong> (Sơn La)</span>
+                </div>
+            </div>
         </div>
-        <div class="weather-metrics">
-          <div>
-            <small>Nhiệt độ KK</small>
-            <b id="w-temp">-- °C</b>
-          </div>
-          <div>
-            <small>Độ ẩm KK</small>
-            <b id="w-hum">-- %</b>
-          </div>
-          <div>
-            <small>Tốc độ gió</small>
-            <b id="w-wind">-- km/h</b>
-          </div>
-          <div>
-            <small>Lượng mưa</small>
-            <b id="w-rain">0.0 mm</b>
-          </div>
-        </div>
-      </div>
 
-      <!-- Thanh công cụ giả lập -->
-      <div class="toolbar-card">
-        <button class="btn" onclick="randomizeSensors()">🔄 Giả lập cảm biến</button>
-        <button class="btn" onclick="toggleAllPumps()">💦 Bật/Tắt toàn bộ bơm</button>
-      </div>
+        <!-- Live Weather Bar -->
+        <div id="weatherWidget" class="flex items-center gap-2 md:gap-4 bg-slate-800/90 border border-slate-700/80 rounded-xl px-3 py-1.5 shadow-inner">
+            <div class="flex items-center gap-2.5">
+                <div id="weatherIconBox" class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-amber-400 text-lg">
+                    <i id="weatherIcon" class="fa-solid fa-cloud-sun"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Thời tiết Chiềng Mung</span>
+                        <button onclick="fetchRealWeather(true)" title="Cập nhật thời tiết thực tế" class="text-[10px] text-sky-400 hover:text-sky-300 transition">
+                            <i id="weatherSyncIcon" class="fa-solid fa-arrows-rotate"></i>
+                        </button>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span id="weatherTemp" class="text-sm md:text-base font-bold font-mono text-white">--°C</span>
+                        <span id="weatherDesc" class="text-xs text-emerald-400 font-medium">Đang tải...</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden lg:flex items-center gap-4 pl-3 border-l border-slate-700 text-xs">
+                <div>
+                    <span class="text-slate-400 block text-[10px]">Độ ẩm KK</span>
+                    <span id="weatherHum" class="font-mono font-bold text-sky-400"><i class="fa-solid fa-droplet mr-1"></i>--%</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px]">Tốc độ gió</span>
+                    <span id="weatherWind" class="font-mono font-bold text-slate-200"><i class="fa-solid fa-wind mr-1 text-slate-400"></i>-- km/h</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px]">Lượng mưa</span>
+                    <span id="weatherRain" class="font-mono font-bold text-indigo-300"><i class="fa-solid fa-cloud-rain mr-1"></i>0.0 mm</span>
+                </div>
+                <div>
+                    <button onclick="toggleRainEffect()" id="btnRainSim" class="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-[11px] font-medium text-slate-200 transition">
+                        <i class="fa-solid fa-cloud-showers-heavy mr-1 text-sky-400"></i>Giả lập mưa
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="openIoTModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition shadow">
+                <i class="fa-solid fa-code text-emerald-400"></i>
+                <span class="hidden sm:inline">API Cảm Biến / MQTT</span>
+            </button>
+            <button onclick="toggleBrandingDrawer()" class="xl:hidden px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold">
+                <i class="fa-solid fa-sliders"></i> Bảng Điều Khiển
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- CENTER: INTERACTIVE SVG FARM MAP -->
+        <main class="flex-1 relative satellite-canvas overflow-hidden flex flex-col">
+            <div class="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+                <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 p-1 rounded-xl flex flex-wrap items-center gap-1 shadow-xl pointer-events-auto">
+                    <span class="text-[11px] font-semibold text-slate-400 px-2.5 hidden sm:inline">
+                        <i class="fa-solid fa-layer-group mr-1 text-emerald-400"></i>Chế độ hiển thị:
+                    </span>
+                    <button onclick="setMapDisplayMode('all')" id="mode-all" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow transition">Tất cả thông số</button>
+                    <button onclick="setMapDisplayMode('temp')" id="mode-temp" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"><i class="fa-solid fa-temperature-half text-amber-400 mr-1"></i>Nhiệt độ (°C)</button>
+                    <button onclick="setMapDisplayMode('moisture')" id="mode-moisture" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"><i class="fa-solid fa-droplet text-sky-400 mr-1"></i>Độ ẩm đất (%)</button>
+                    <button onclick="setMapDisplayMode('pump')" id="mode-pump" class="mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"><i class="fa-solid fa-faucet-drip text-cyan-400 mr-1"></i>Trạng thái Bơm</button>
+                </div>
+
+                <div class="flex items-center gap-2 pointer-events-auto">
+                    <div class="bg-slate-900/90 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl flex items-center gap-3 text-xs shadow-xl">
+                        <div>
+                            <span class="text-slate-400">Bơm đang bật:</span>
+                            <span id="activePumpCountBadge" class="ml-1 font-mono font-bold text-cyan-400">0/19</span>
+                        </div>
+                        <span class="text-slate-700">|</span>
+                        <div>
+                            <span class="text-slate-400">Nhiệt độ TB:</span>
+                            <span id="avgTempBadge" class="ml-1 font-mono font-bold text-amber-400">--°C</span>
+                        </div>
+                        <span class="text-slate-700">|</span>
+                        <div>
+                            <span class="text-slate-400">Ẩm đất TB:</span>
+                            <span id="avgMoistureBadge" class="ml-1 font-mono font-bold text-emerald-400">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compass Rose -->
+            <div class="absolute top-16 right-5 z-10 pointer-events-none select-none opacity-95">
+                <svg width="96" height="96" viewBox="0 0 100 100" class="drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]">
+                    <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="1.2" stroke-dasharray="2 2"/>
+                    <circle cx="50" cy="50" r="28" fill="rgba(15,23,42,0.45)" stroke="rgba(255,255,255,0.75)" stroke-width="1.5"/>
+                    <polygon points="50,12 56,44 50,50 44,44" fill="#ffffff"/>
+                    <polygon points="50,88 56,56 50,50 44,56" fill="rgba(255,255,255,0.75)"/>
+                    <polygon points="88,50 56,56 50,50 56,44" fill="rgba(255,255,255,0.75)"/>
+                    <polygon points="12,50 44,56 50,50 44,44" fill="rgba(255,255,255,0.75)"/>
+                    <circle cx="50" cy="50" r="4" fill="#0f172a" stroke="#ffffff" stroke-width="1.5"/>
+                    <text x="50" y="9" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold" font-family="serif">N</text>
+                    <text x="50" y="98" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold" font-family="serif">S</text>
+                    <text x="94" y="53" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold" font-family="serif">E</text>
+                    <text x="5" y="53" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="bold" font-family="serif">W</text>
+                </svg>
+            </div>
+
+            <!-- Zoom Controls -->
+            <div class="absolute bottom-4 right-4 z-20 flex flex-col gap-1.5 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-700/80 shadow-xl">
+                <button onclick="zoomMap(1.2)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition"><i class="fa-solid fa-plus text-xs"></i></button>
+                <button onclick="zoomMap(0.85)" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition"><i class="fa-solid fa-minus text-xs"></i></button>
+                <button onclick="resetMapView()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 flex items-center justify-center transition"><i class="fa-solid fa-compress text-xs"></i></button>
+            </div>
+
+            <!-- Legend -->
+            <div class="absolute bottom-4 left-4 z-20 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-2xl p-3.5 shadow-2xl max-w-[235px]">
+                <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-800">
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-map-location-dot text-emerald-500"></i> Chú Giải Sơ Đồ
+                    </h3>
+                    <button onclick="resetLegendFilter()" id="btnResetLegend" class="hidden text-[10px] text-sky-400 hover:underline">Hiện tất cả</button>
+                </div>
+                <div class="space-y-1.5 text-[11px] font-medium text-slate-200">
+                    <div onclick="filterByCategory('factory')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 flex justify-center text-rose-500"><i class="fa-solid fa-location-dot"></i></span>
+                        <span>Công Ty CP Phúc Sinh Sơn La</span>
+                    </div>
+                    <div onclick="filterByCategory('mountain_hill')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#d896c8] inline-block shrink-0"></span>
+                        <span>Mountain Hill</span>
+                    </div>
+                    <div onclick="filterByCategory('wastewater')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#4f67b8] inline-block shrink-0"></span>
+                        <span>Khu Xử Lý Nước Thải</span>
+                    </div>
+                    <div onclick="filterByCategory('water')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#2ea89c] inline-block shrink-0"></span>
+                        <span>Hồ Nước, Bể Nước</span>
+                    </div>
+                    <div onclick="filterByCategory('coffee')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#1ec93b] inline-block shrink-0"></span>
+                        <span>Lô Cà Phê Hữu Cơ (19 Lô)</span>
+                    </div>
+                    <div onclick="filterByCategory('nursery')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#72b07d] inline-block shrink-0"></span>
+                        <span>Vườn Ươm</span>
+                    </div>
+                    <div onclick="filterByCategory('pine')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#468956] inline-block shrink-0"></span>
+                        <span>Rừng Thông</span>
+                    </div>
+                    <div onclick="filterByCategory('byproduct')" class="flex items-center gap-2.5 cursor-pointer hover:bg-slate-800 px-1 py-0.5 rounded transition">
+                        <span class="w-5 h-3 rounded-sm bg-[#656d2a] inline-block shrink-0"></span>
+                        <span>Khu Tập Kết Phụ Phẩm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SVG CANVAS -->
+            <div id="mapViewport" class="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden">
+                <svg id="farmSvg" viewBox="0 0 1150 920" class="w-full h-full max-h-full transition-transform duration-150 ease-out" style="transform-origin: center center;">
+                    <defs>
+                        <pattern id="coffeeTexture" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <rect width="20" height="20" fill="#1cb836" fill-opacity="0.82"/>
+                            <circle cx="5" cy="5" r="2" fill="#148a28" fill-opacity="0.6"/>
+                            <circle cx="15" cy="6" r="1.8" fill="#4ade80" fill-opacity="0.45"/>
+                            <circle cx="10" cy="14" r="2.2" fill="#15803d" fill-opacity="0.6"/>
+                        </pattern>
+                        <pattern id="irrigatingPattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                            <rect width="24" height="24" fill="#0ea5e9" fill-opacity="0.72"/>
+                            <circle cx="6" cy="6" r="2.5" fill="#e0f2fe" fill-opacity="0.8"/>
+                            <circle cx="18" cy="14" r="2" fill="#38bdf8" fill-opacity="0.9"/>
+                        </pattern>
+                        <pattern id="waterTexture" width="30" height="30" patternUnits="userSpaceOnUse">
+                            <rect width="30" height="30" fill="#2ea89c" fill-opacity="0.88"/>
+                            <path d="M 2 10 Q 9 6 16 10 T 28 10" fill="none" stroke="#99f6e4" stroke-width="1.2" stroke-opacity="0.5"/>
+                        </pattern>
+                        <pattern id="pineTexture" width="24" height="24" patternUnits="userSpaceOnUse">
+                            <rect width="24" height="24" fill="#3d7a4c" fill-opacity="0.88"/>
+                            <polygon points="12,3 6,15 18,15" fill="#1e4629" fill-opacity="0.65"/>
+                        </pattern>
+                        <filter id="badgeShadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.65"/>
+                        </filter>
+                    </defs>
+
+                    <!-- Factory & Zones -->
+                    <g id="zone-factory" data-category="factory" onclick="selectSupportZone('factory')" class="farm-zone">
+                        <polygon points="445,305 492,265 735,438 765,498 712,505 632,495 548,448 408,355" fill="#94a3b8" fill-opacity="0.38" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="4 2"/>
+                        <polygon points="485,322 515,292 692,418 662,452" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                        <g transform="translate(595, 392)">
+                            <circle cx="0" cy="0" r="12" fill="#e11d48" stroke="#ffffff" stroke-width="2"/>
+                            <circle cx="0" cy="0" r="4" fill="#ffffff"/>
+                            <text x="16" y="5" fill="#ffffff" font-size="13" font-weight="800" style="text-shadow: 0 2px 4px rgba(0,0,0,0.95);">Công Ty Cổ Phần Phúc Sinh Sơn La</text>
+                        </g>
+                    </g>
+
+                    <g id="zone-wastewater" data-category="wastewater" onclick="selectSupportZone('wastewater')" class="farm-zone">
+                        <polygon points="402,362 438,325 462,382 548,438 518,482 385,405" fill="#4f67b8" fill-opacity="0.88" stroke="#93c5fd" stroke-width="1.8"/>
+                        <text x="448" y="395" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="700" transform="rotate(33 448 395)">Khu xử lý nước thải</text>
+                    </g>
+
+                    <g id="zone-nursery" data-category="nursery" onclick="selectSupportZone('nursery')" class="farm-zone">
+                        <polygon points="522,485 552,445 642,508 598,538 515,572 492,535" fill="#72b07d" fill-opacity="0.9" stroke="#bbf7d0" stroke-width="1.8"/>
+                        <text x="558" y="512" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700" transform="rotate(-32 558 512)">Vườn ươm</text>
+                    </g>
+
+                    <g id="zone-mountain-hill" data-category="mountain_hill" onclick="selectSupportZone('mountain_hill')" class="farm-zone">
+                        <polygon points="648,505 712,492 768,488 792,538 742,555 662,535" fill="#d896c8" fill-opacity="0.88" stroke="#fbcfe8" stroke-width="1.8"/>
+                        <text x="720" y="524" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Mountain Hill</text>
+                    </g>
+
+                    <g id="zone-water-tank" data-category="water" onclick="selectSupportZone('water_tank')" class="farm-zone">
+                        <polygon points="215,418 278,378 335,462 272,505" fill="url(#waterTexture)" stroke="#67e8f9" stroke-width="2"/>
+                        <text x="275" y="445" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700" transform="rotate(32 275 445)">Bể Nước</text>
+                    </g>
+
+                    <g id="zone-water-lake" data-category="water" onclick="selectSupportZone('water_lake')" class="farm-zone">
+                        <polygon points="588,672 728,582 752,612 745,672 695,705 648,708 615,738 592,715" fill="url(#waterTexture)" stroke="#67e8f9" stroke-width="2.2"/>
+                        <text x="678" y="662" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="800" transform="rotate(-18 678 662)">Hồ nước</text>
+                    </g>
+
+                    <g id="zone-pine" data-category="pine" onclick="selectSupportZone('pine')" class="farm-zone">
+                        <polygon points="565,712 615,738 655,708 745,672 755,698 668,755 628,760 595,785" fill="url(#pineTexture)" stroke="#86efac" stroke-width="1.5"/>
+                        <text x="652" y="748" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="700">Rừng thông</text>
+                    </g>
+
+                    <g id="zone-byproduct" data-category="byproduct" onclick="selectSupportZone('byproduct')" class="farm-zone">
+                        <polygon points="468,815 522,768 585,748 618,790 505,872" fill="#656d2a" fill-opacity="0.92" stroke="#bef264" stroke-width="1.8"/>
+                        <text x="538" y="805" text-anchor="middle" fill="#ffffff" font-size="11.5" font-weight="700">Khu Tập Kết</text>
+                        <text x="538" y="822" text-anchor="middle" fill="#fef08a" font-size="11.5" font-weight="700">Phụ Phẩm</text>
+                    </g>
+
+                    <!-- DYNAMIC PIPELINES & 19 COFFEE PLOTS -->
+                    <g id="waterPipelinesLayer" pointer-events="none"></g>
+                    <g id="coffeePlotsLayer" data-category="coffee"></g>
+                    <g id="plotOverlaysLayer" pointer-events="none"></g>
+                    <g id="weatherEffectLayer" class="hidden" pointer-events="none"></g>
+                </svg>
+            </div>
+        </main>
+
+        <!-- RIGHT PANEL -->
+        <aside id="rightControlSidebar" class="w-full sm:w-[410px] xl:w-[440px] bg-slate-900 border-l border-slate-800 flex flex-col z-30 shrink-0 absolute xl:static inset-y-0 right-0 transform translate-x-full xl:translate-x-0 transition-transform duration-300 shadow-2xl">
+            <div class="grid grid-cols-3 bg-slate-950/90 p-1.5 gap-1 border-b border-slate-800 shrink-0">
+                <button onclick="switchSidebarTab('control')" id="tab-btn-control" class="py-2 px-2 rounded-lg text-xs font-bold bg-emerald-600 text-white shadow flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-faucet-drip"></i> Bơm & Cảm Biến
+                </button>
+                <button onclick="switchSidebarTab('detail')" id="tab-btn-detail" class="py-2 px-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-sliders"></i> Chi Tiết Lô
+                </button>
+                <button onclick="switchSidebarTab('brand')" id="tab-btn-brand" class="py-2 px-2 rounded-lg text-xs font-bold text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-award"></i> Hồ Sơ Farm
+                </button>
+            </div>
+
+            <div id="tab-control" class="flex-1 flex flex-col overflow-hidden">
+                <div class="p-3.5 bg-slate-800/50 border-b border-slate-800 space-y-2.5 shrink-0">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt text-amber-400"></i> Điều Khiển Bơm Toàn Vườn
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <button onclick="toggleAllPumps(true)" class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold transition shadow"><i class="fa-solid fa-play mr-1"></i>Bật Tất</button>
+                            <button onclick="toggleAllPumps(false)" class="px-2.5 py-1 rounded-lg bg-slate-700 hover:bg-rose-600 text-slate-200 text-[11px] font-bold transition"><i class="fa-solid fa-power-off mr-1"></i>Tắt Tất</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="plotSearchInput" oninput="renderPlotControlList()" placeholder="Tìm lô (VD: LO_01, LO_03)..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <button onclick="simulateDrySpell()" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-[11px] font-semibold shrink-0 transition">
+                            <i class="fa-solid fa-sun-plant-wilt mr-1"></i>Test Hạn
+                        </button>
+                    </div>
+                </div>
+                <div id="plotControlList" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+            </div>
+
+            <div id="tab-detail" class="hidden flex-1 overflow-y-auto p-4 space-y-4">
+                <div id="selectedPlotContainer"></div>
+            </div>
+
+            <div id="tab-brand" class="hidden flex-1 overflow-y-auto bg-white text-slate-900 p-5 space-y-5">
+                <div class="text-center border-b border-slate-200 pb-4">
+                    <h2 class="text-xl font-extrabold tracking-wide text-[#183862]">PHUC SINH</h2>
+                    <h3 class="text-lg font-extrabold tracking-wide text-[#183862] mt-0.5">MOUNTAIN HILL FARM</h3>
+                    <div class="mt-3 text-left bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1 font-medium text-slate-700">
+                        <p><strong>Tổng diện tích:</strong> 17.9 ha (8.29 ha canh tác hữu cơ, 28,260 cây)</p>
+                        <p><strong>Tọa độ GPS:</strong> 21.254283, 103.960983</p>
+                        <p><strong>Đơn vị vận hành:</strong> Công Ty Cổ Phần Phúc Sinh Sơn La</p>
+                    </div>
+                </div>
+                <div class="space-y-4 flex flex-col items-center">
+                    <div class="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center shadow-sm">
+                        <div class="text-sm font-black text-[#1b4d3e]">RAINFOREST ALLIANCE & TCVN 11041 HỮU CƠ</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
 
-    <!-- SƠ ĐỒ SVG VỚI ẢNH VỆ TINH LÀM NỀN VÀ TỌA ĐỘ KHỚP HOÀN TOÀN -->
-    <svg id="farm-svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet">
-      <!-- ẢNH NỀN VỆ TINH -->
-      <image href="image_802936.jpg" x="0" y="0" width="1000" height="700" preserveAspectRatio="none" opacity="0.9" />
+    <!-- POPUP MODAL CHI TIẾT LÔ CHUẨN XÁC THEO EXCEL -->
+    <div id="plotModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-[scaleIn_0.2s_ease-out]">
+            <div class="px-5 py-4 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
+                <div>
+                    <span id="modalPlotTag" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">Hồ Sơ Canh Tác Hữu Cơ</span>
+                    <h3 id="modalPlotTitle" class="text-lg font-extrabold text-white mt-1">Chi Tiết Lô Cà Phê</h3>
+                </div>
+                <button onclick="closePlotModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-5 space-y-4">
+                <!-- Sensor Live Box -->
+                <div class="grid grid-cols-3 gap-2.5 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-center">
+                    <div>
+                        <span class="text-[11px] text-slate-400 block">Độ ẩm đất</span>
+                        <strong id="modalSoilVal" class="text-base font-mono font-bold text-sky-400 mt-0.5 block">--%</strong>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 block">Nhiệt độ lô</span>
+                        <strong id="modalTempVal" class="text-base font-mono font-bold text-amber-400 mt-0.5 block">--°C</strong>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-400 block">Trạng thái bơm</span>
+                        <strong id="modalPumpVal" class="text-xs font-bold mt-1 block px-2 py-0.5 rounded bg-slate-800 text-slate-300">TẮT</strong>
+                    </div>
+                </div>
 
-      <!-- LỚP ỐNG NƯỚC ĐỘNG TỪ BỂ NƯỚC & HỒ NƯỚC -->
-      <g id="pipes-layer"></g>
+                <!-- Detailed Excel Info Table -->
+                <div class="bg-slate-800/40 rounded-xl border border-slate-800 overflow-hidden text-xs">
+                    <table class="w-full text-left border-collapse">
+                        <tbody id="modalExcelTableBody" class="divide-y divide-slate-800">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
 
-      <!-- VÙNG MÀU CÁC KHU VỰC CHỨC NĂNG (Đúng vị trí vạt màu trên ảnh Google Maps) -->
-      <!-- Nhà máy Phúc Sinh Sơn La -->
-      <g onclick="openPlotModal('FACTORY')" class="zone-poly">
-        <polygon points="410,210 580,315 555,365 385,265" fill="#94a3b8" fill-opacity="0.25" stroke="#cbd5e1" stroke-width="1.5" />
-      </g>
-
-      <!-- Khu xử lý nước thải (Xanh dương đậm) -->
-      <g onclick="openPlotModal('WASTEWATER')" class="zone-poly">
-        <polygon points="310,235 390,295 365,340 280,285" fill="#2563eb" fill-opacity="0.65" stroke="#93c5fd" stroke-width="1.5" />
-      </g>
-
-      <!-- Bể nước (Xanh dương sáng) -->
-      <g onclick="openPlotModal('TANK')" class="zone-poly">
-        <polygon points="175,325 220,305 270,375 220,405" fill="#0284c7" fill-opacity="0.75" stroke="#bae6fd" stroke-width="1.5" />
-      </g>
-
-      <!-- Mountain Hill (Tím) -->
-      <g onclick="openPlotModal('MOUNTAIN_HILL')" class="zone-poly">
-        <polygon points="510,360 595,335 610,365 525,390" fill="#a855f7" fill-opacity="0.65" stroke="#f3e8ff" stroke-width="1.5" />
-      </g>
-
-      <!-- Hồ nước điều hòa LO_17 (Xanh dương hồ) -->
-      <g onclick="openPlotModal('LO_17')" class="zone-poly">
-        <polygon points="480,480 575,420 595,490 500,550" fill="#0ea5e9" fill-opacity="0.75" stroke="#bae6fd" stroke-width="1.5" />
-      </g>
-
-      <!-- Rừng thông (Xanh lá đậm) -->
-      <g onclick="openPlotModal('LO_12_14')" class="zone-poly">
-        <polygon points="480,550 595,490 610,515 500,580" fill="#15803d" fill-opacity="0.65" stroke="#86efac" stroke-width="1.5" />
-      </g>
-
-      <!-- Khu tập kết phụ phẩm / Ga Vỏ (Nâu) -->
-      <g onclick="openPlotModal('LO_16')" class="zone-poly">
-        <polygon points="395,580 475,540 515,615 430,655" fill="#78350f" fill-opacity="0.7" stroke="#fde047" stroke-width="1.5" />
-      </g>
-
-      <!-- LỚP 19 LÔ CÀ PHÊ & VƯỜN ƯƠM TRÙ KHÍT VẠT MÀU XANH TRÊN ẢNH VỆ TINH -->
-      <g id="plots-layer"></g>
-    </svg>
-
-    <!-- Bảng Chú Giải -->
-    <div class="legend-box">
-      <h4>Chú Giải Sơ Đồ Vệ Tinh</h4>
-      <div class="legend-item"><span class="legend-swatch" style="background:#22c55e"></span> Lô Cà Phê Hữu Cơ</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#0ea5e9"></span> Hồ / Bể Cấp Nước</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#4ade80"></span> Vườn Ươm & Cây Ăn Quả</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#a855f7"></span> Mountain Hill</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#2563eb"></span> Xử Lý Nước Thải</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#78350f"></span> Khu Tập Kết Phụ Phẩm</div>
-    </div>
-  </div>
-
-  <!-- SIDEBAR PHẢI -->
-  <aside class="sidebar">
-    <div class="brand-header">
-      <h1>PHUC SINH</h1>
-      <h2>MOUNTAIN HILL FARM</h2>
-      <div class="brand-meta">
-        Tổng diện tích: <b>17.9 ha</b><br/>
-        Hữu cơ chuyển đổi: <b>8.29 ha</b><br/>
-        Tọa độ: <b>21.254283, 103.960983</b>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <small>Tổng số cây</small>
-        <strong>28,260 cây</strong>
-      </div>
-      <div class="stat-card">
-        <small>Bơm đang chạy</small>
-        <strong id="active-pumps-count" style="color:#38bdf8;">0 / 20 lô</strong>
-      </div>
-    </div>
-
-    <div class="pump-list-header">
-      <span>DANH SÁCH LÔ & TRẠNG THÁI BƠM</span>
-      <small style="color:#38bdf8;">Click để xem chi tiết</small>
-    </div>
-
-    <div class="plot-cards-container" id="sidebar-plot-list"></div>
-  </aside>
-
-  <!-- POPUP MODAL CHI TIẾT LÔ -->
-  <div class="modal-backdrop" id="plot-modal" onclick="if(event.target===this) closePlotModal()">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div>
-          <h3 id="m-title">Chi tiết Lô</h3>
-          <p id="m-subtitle">Dữ liệu canh tác hữu cơ & cảm biến thời gian thực</p>
+                <div class="flex items-center justify-end gap-2.5 pt-2">
+                    <button id="modalPumpToggleBtn" onclick="toggleModalPlotPump()" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 transition shadow">
+                        <i class="fa-solid fa-faucet-drip"></i> Bật Máy Bơm Lô Này
+                    </button>
+                    <button onclick="closePlotModal()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition">
+                        Đóng
+                    </button>
+                </div>
+            </div>
         </div>
-        <button class="close-btn" onclick="closePlotModal()">&times;</button>
-      </div>
-
-      <div class="sensor-live-box" id="m-sensor-box">
-        <div>
-          <span>Độ ẩm đất (IoT)</span>
-          <strong id="m-soil">-- %</strong>
-        </div>
-        <div>
-          <span>Nhiệt độ lô</span>
-          <strong id="m-temp">-- °C</strong>
-        </div>
-        <div>
-          <span>Trạng thái bơm</span>
-          <strong id="m-pump-state">ĐANG TẮT</strong>
-        </div>
-      </div>
-
-      <table class="info-table" id="m-table"></table>
-
-      <div class="modal-actions">
-        <button class="btn" id="m-pump-btn" onclick="toggleCurrentModalPump()">💦 Bật máy bơm lô này</button>
-        <button class="btn" onclick="closePlotModal()">Đóng</button>
-      </div>
     </div>
-  </div>
 
-  <script>
-    // DỮ LIỆU CHÍNH XÁC KHỚP TUYỆT ĐỐI VỚI VẠT MÀU TRÊN ẢNH VỆ TINH
-    const PLOTS_DATA = [
-      {
-        id: "LO_01", mapLabel: "01", area: 0.78, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2024", trees: "2,142 cây", spacing: "1.2 x 1.7 m", rows: "Chưa cập nhật",
-        note: "Khu vực phía Đông Bắc trang trại",
-        points: "320,105 385,75 440,165 375,195", waterSource: [220, 375],
-        soilMoisture: 64, tempOffset: -0.3, pumping: false
-      },
-      {
-        id: "LO_02.1", mapLabel: "02-1", area: 0.67, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2023", trees: "2,240 cây", spacing: "1 x 2 m", rows: "63 hàng",
-        note: "Giáp ranh sườn Tây Bắc",
-        points: "135,145 200,95 240,150 170,205", waterSource: [220, 375],
-        soilMoisture: 58, tempOffset: 0.1, pumping: false
-      },
-      {
-        id: "LO_02.2", mapLabel: "02-2", area: 0.34, crop: "CA_PHE_STARMAYA (Cà phê Starmaya)",
-        year: "2020", trees: "776 cây", spacing: "1 x 2 m", rows: "32 hàng",
-        note: "Đỉnh phía Bắc trang trại",
-        points: "205,90 270,45 305,100 240,145", waterSource: [220, 375],
-        soilMoisture: 61, tempOffset: -0.2, pumping: false
-      },
-      {
-        id: "LO_03", mapLabel: "03", area: 1.48, crop: "CA_PHE_STARMAYA (Cà phê Starmaya)",
-        year: "2020", trees: "3,898 cây", spacing: "1.5 x 2 m", rows: "70 hàng",
-        note: "Lô trung tâm có diện tích lớn nhất (1.48 Ha)",
-        points: "175,200 300,105 375,195 245,285", waterSource: [220, 375],
-        soilMoisture: 55, tempOffset: 0.4, pumping: false
-      },
-      {
-        id: "LO_04", mapLabel: "04", area: 0.39, crop: "CA_PHE_STARMAYA (Cà phê Starmaya)",
-        year: "2020", trees: "1,098 cây", spacing: "1.5 x 2 m", rows: "27 hàng",
-        note: "Nằm ngay phía Bắc Bể Nước",
-        points: "120,230 170,205 220,285 165,315", waterSource: [220, 375],
-        soilMoisture: 68, tempOffset: -0.1, pumping: false
-      },
-      {
-        id: "LO_05.1", mapLabel: "05-1", area: 0.28, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2020", trees: "1,143 cây", spacing: "1 x 2 m", rows: "29 hàng",
-        note: "Giáp lô 3 (17 hàng), giáp lô 7 (12 hàng)",
-        points: "245,290 305,255 330,295 270,335", waterSource: [220, 375],
-        soilMoisture: 62, tempOffset: 0.0, pumping: false
-      },
-      {
-        id: "LO_05.2", mapLabel: "05-2", area: 0.19, crop: "CA_PHE_STARMAYA (Cà phê Starmaya)",
-        year: "2023", trees: "446 cây", spacing: "1 x 2 m", rows: "14 hàng",
-        note: "Giáp Khu xử lý nước thải và Lô 07",
-        points: "275,340 335,305 375,360 315,395", waterSource: [220, 375],
-        soilMoisture: 59, tempOffset: 0.2, pumping: false
-      },
-      {
-        id: "LO_06", mapLabel: "06", area: 0.67, crop: "Starmaya (LO_06.1) & THA1 (LO_06.2)",
-        year: "2020", trees: "2,737 cây", spacing: "1 x 2 m", rows: "52 hàng",
-        note: "Gồm LO_06.1 (0.19 Ha) và LO_06.2 (0.48 Ha)",
-        points: "210,400 275,355 315,415 250,460", waterSource: [220, 375],
-        soilMoisture: 66, tempOffset: -0.2, pumping: false
-      },
-      {
-        id: "LO_07", mapLabel: "07", area: 0.60, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2020", trees: "2,009 cây", spacing: "1 x 2 m", rows: "38 hàng",
-        note: "Trung tâm sườn giữa trang trại",
-        points: "320,395 390,350 435,415 365,465", waterSource: [220, 375],
-        soilMoisture: 57, tempOffset: 0.3, pumping: false
-      },
-      {
-        id: "LO_07.1", mapLabel: "Vườn ươm", area: 0.18, crop: "Vườn Ươm (0.1Ha) & Cây Ăn Quả (0.08Ha)",
-        year: "2023", trees: "70 cây ăn quả + Vườn ươm", spacing: "Tiêu chuẩn", rows: "-",
-        note: "0.08Ha Cây ăn quả + 0.10Ha Vườn ươm giống",
-        points: "400,360 475,315 525,370 450,415", waterSource: [220, 375],
-        soilMoisture: 74, tempOffset: -0.5, pumping: false, customColor: "#4ade80"
-      },
-      {
-        id: "LO_08.2", mapLabel: "08-2", area: 0.41, crop: "CA_PHE_CATIMOR (Cà phê Catimor)",
-        year: "2020", trees: "2,190 cây", spacing: "0.9 x 1.5 m", rows: "37 hàng",
-        note: "Mật độ trồng dày 0.9x1.5m",
-        points: "255,465 320,420 360,475 295,525", waterSource: [220, 375],
-        soilMoisture: 60, tempOffset: 0.1, pumping: false
-      },
-      {
-        id: "LO_08.1", mapLabel: "08-1", area: 0.32, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2023", trees: "1,149 cây", spacing: "1.2 x 1.7 m", rows: "46 hàng",
-        note: "Nằm giữa Lô 08-2 và Lô 10",
-        points: "300,530 365,480 405,535 340,585", waterSource: [220, 375],
-        soilMoisture: 53, tempOffset: 0.2, pumping: false
-      },
-      {
-        id: "LO_09.1", mapLabel: "09-1", area: 0.18, crop: "CA_PHE_STARMAYA (Cà phê Starmaya)",
-        year: "2020", trees: "703 cây", spacing: "1 x 2 m", rows: "43 hàng",
-        note: "Dải lô 09 phía Tây Nam",
-        points: "380,480 410,460 455,525 425,545", waterSource: [535, 485],
-        soilMoisture: 63, tempOffset: 0.0, pumping: false
-      },
-      {
-        id: "LO_09.2", mapLabel: "09-2", area: 0.28, crop: "CA_PHE_MARSELLESA (Cà phê Marsellesa)",
-        year: "2020", trees: "1,210 cây", spacing: "1 x 2 m", rows: "46 hàng",
-        note: "Giống cà phê đặc sản Marsellesa",
-        points: "410,455 440,435 485,500 455,520", waterSource: [535, 485],
-        soilMoisture: 65, tempOffset: -0.1, pumping: false
-      },
-      {
-        id: "LO_09.3", mapLabel: "09-3", area: 0.26, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2020", trees: "833 cây", spacing: "1 x 2 m", rows: "41 hàng",
-        note: "Giáp hồ điều hòa",
-        points: "440,430 470,410 515,475 485,495", waterSource: [535, 485],
-        soilMoisture: 67, tempOffset: -0.2, pumping: false
-      },
-      {
-        id: "LO_09.4", mapLabel: "09-4", area: 0.24, crop: "CA_PHE_H1 (Cà phê H1)",
-        year: "2021", trees: "1,112 cây", spacing: "1 x 2 m", rows: "42 hàng",
-        note: "Phía Bắc cụm lô 09, giống H1",
-        points: "450,405 520,365 550,400 480,440", waterSource: [535, 485],
-        soilMoisture: 61, tempOffset: 0.1, pumping: false
-      },
-      {
-        id: "LO_10", mapLabel: "10", area: 0.63, crop: "CA_PHE_THA1 (Cà phê THA1)",
-        year: "2023", trees: "2,262 cây", spacing: "1.2 x 1.7 m", rows: "45 hàng",
-        note: "Cực Tây Nam của trang trại",
-        points: "345,595 410,545 455,605 390,655", waterSource: [535, 485],
-        soilMoisture: 56, tempOffset: 0.3, pumping: false
-      },
-      {
-        id: "LO_11", mapLabel: "11-2", area: 0.37, crop: "CAPHE_THA1 (Cà phê THA1)",
-        year: "2025", trees: "452 cây", spacing: "1 x 2 m", rows: "14 hàng",
-        note: "Trên bản đồ ký hiệu 11-2",
-        points: "525,410 600,380 615,415 540,445", waterSource: [535, 485],
-        soilMoisture: 69, tempOffset: -0.2, pumping: false
-      },
-      {
-        id: "LO_11.1", mapLabel: "11-1", area: 0.55, crop: "CÂY ĂN QUẢ",
-        year: "2025", trees: "300 cây", spacing: "Quy hoạch", rows: "-",
-        note: "Khu cây ăn quả phía Đông Hồ nước",
-        points: "615,420 690,395 720,495 645,515", waterSource: [535, 485],
-        soilMoisture: 63, tempOffset: 0.0, pumping: false
-      },
-      {
-        id: "LO_13", mapLabel: "13", area: 0.20, crop: "CA_PHE_THA1 (Gồm LO_13.1 & LO_13.2)",
-        year: "2024 - 2025", trees: "660 cây", spacing: "1.2 x 1.7 m", rows: "-",
-        note: "Tích hợp LO_13.1 (0.16Ha) và LO_13.2 (0.04Ha)",
-        points: "415,595 490,545 505,580 430,630", waterSource: [535, 485],
-        soilMoisture: 60, tempOffset: 0.1, pumping: false
-      }
-    ];
+    <!-- IOT API MODAL -->
+    <div id="iotModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl">
+            <div class="px-5 py-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                <h3 class="font-bold text-sm text-white">Tích Hợp API Cảm Biến / MQTT / WebSocket</h3>
+                <button onclick="closeIoTModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 space-y-4 text-xs">
+                <p class="text-slate-300">Sử dụng hàm JavaScript toàn cục để cập nhật dữ liệu từ ESP32/Sensor:</p>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] text-emerald-300 overflow-x-auto">
+<pre>window.updatePhucSinhPlot({
+    plotId: "LO_03",       // Mã lô: "LO_01", "LO_02.1", "LO_03", "LO_05.1"...
+    temperature: 26.4,     // Nhiệt độ (°C)
+    moisture: 72.5,        // Độ ẩm đất (%)
+    pumpStatus: true       // true = Bật bơm, false = Tắt bơm
+});</pre>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    const EXTRA_ZONES = {
-      "LO_12_14": {
-        title: "Rừng Thông & Bạch Đàn (LO_12 & LO_14)",
-        crop: "Cây Thông & Bạch Đàn", area: "0.84 Ha", year: "2020", trees: "830 cây", spacing: "Rừng phòng hộ", rows: "-", note: "Khu vực đệm sinh thái phía Nam"
-      },
-      "LO_16": {
-        title: "Khu Tập Kết Phụ Phẩm / Khu Ga Vỏ (LO_16)",
-        crop: "KHU GA VỎ - Ủ phân hữu cơ", area: "0.66 Ha", year: "-", trees: "-", spacing: "-", rows: "-", note: "Tập kết vỏ cà phê tuần hoàn"
-      },
-      "LO_17": {
-        title: "Khu Hồ Điều Hòa (LO_17)",
-        crop: "HỒ ĐIỀU HÒA - Trữ nước tưới", area: "0.6674 Ha", year: "-", trees: "-", spacing: "-", rows: "-", note: "Nguồn cấp nước tưới khu vực phía Nam"
-      },
-      "FACTORY": {
-        title: "Nhà máy Công Ty CP Phúc Sinh Sơn La",
-        crop: "Khu chế biến & điều hành", area: "Tổng khu 17.9 Ha", year: "-", trees: "-", spacing: "-", rows: "-", note: "Trung tâm quản lý SCADA & chế biến Arabica"
-      },
-      "WASTEWATER": {
-        title: "Khu Xử Lý Nước Thải",
-        crop: "Hệ thống xử lý nước thải", area: "Hạ tầng kỹ thuật", year: "-", trees: "-", spacing: "-", rows: "-", note: "Đảm bảo tiêu chuẩn môi trường"
-      },
-      "TANK": {
-        title: "Bể Nước Trung Tâm",
-        crop: "Bể cấp áp lực phía Tây", area: "Hạ tầng kỹ thuật", year: "-", trees: "-", spacing: "-", rows: "-", note: "Cấp nước trực tiếp cho cụm phía Tây"
-      },
-      "MOUNTAIN_HILL": {
-        title: "Phân Khu Mountain Hill",
-        crop: "Khu cảnh quan & thưởng lãm", area: "Hạ tầng", year: "-", trees: "-", spacing: "-", rows: "-", note: "Nằm liền kề phía Đông nhà máy"
-      }
-    };
+    <!-- APPLICATION JAVASCRIPT -->
+    <script>
+        /**
+         * 1. 19 COFFEE PLOTS DATA STRUCTURE (EXACT METADATA FROM EXCEL & MAP)
+         */
+        const coffeePlotsData = [
+            {
+                id: "LO_01", name: "Lô 01", area: "0.78 Ha", crop: "Cà phê THA1", year: "2024", trees: "2,142 cây", spacing: "1.2 x 1.7 m", rows: "Chưa cập nhật", note: "Khu vực phía Đông Bắc trang trại",
+                points: "305,92 362,48 482,258 438,292", center: { x: 396, y: 182 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 25.1, moisture: 61.0, pumpOn: false, flowRate: 21.0
+            },
+            {
+                id: "LO_02.1", name: "Lô 02.1", area: "0.67 Ha", crop: "Cà phê THA1", year: "2023", trees: "2,240 cây", spacing: "1 x 2 m", rows: "63 hàng", note: "Giáp ranh sườn Tây Bắc",
+                points: "155,265 212,162 248,185 282,242 182,315", center: { x: 215, y: 235 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 24.2, moisture: 66.0, pumpOn: false, flowRate: 18.5
+            },
+            {
+                id: "LO_02.2", name: "Lô 02.2", area: "0.34 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "776 cây", spacing: "1 x 2 m", rows: "32 hàng", note: "Đỉnh phía Bắc trang trại",
+                points: "218,158 292,102 328,162 252,208", center: { x: 272, y: 156 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 24.0, moisture: 68.5, pumpOn: false, flowRate: 12.0
+            },
+            {
+                id: "LO_03", name: "Lô 03", area: "1.48 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "3,898 cây", spacing: "1.5 x 2 m", rows: "70 hàng", note: "Lô trung tâm diện tích lớn nhất",
+                points: "258,215 335,168 428,302 315,392", center: { x: 336, y: 278 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 25.6, moisture: 58.4, pumpOn: true, flowRate: 34.0
+            },
+            {
+                id: "LO_04", name: "Lô 04", area: "0.39 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "1,098 cây", spacing: "1.5 x 2 m", rows: "27 hàng", note: "Phía Bắc Bể Nước",
+                points: "162,282 222,322 272,375 212,412 175,345", center: { x: 212, y: 350 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 24.5, moisture: 65.2, pumpOn: false, flowRate: 14.0
+            },
+            {
+                id: "LO_05.1", name: "Lô 05.1", area: "0.28 Ha", crop: "Cà phê THA1", year: "2020", trees: "1,143 cây", spacing: "1 x 2 m", rows: "29 hàng", note: "Giáp lô 3 (17 hàng), lô 7 (12 hàng)",
+                points: "322,398 408,332 425,355 342,425", center: { x: 372, y: 378 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 25.8, moisture: 54.0, pumpOn: false, flowRate: 11.5
+            },
+            {
+                id: "LO_05.2", name: "Lô 05.2", area: "0.19 Ha", crop: "Cà phê Starmaya", year: "2023", trees: "446 cây", spacing: "1 x 2 m", rows: "14 hàng", note: "Giáp Khu xử lý nước thải và Lô 07",
+                points: "345,432 385,405 422,445 372,482", center: { x: 382, y: 442 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 25.3, moisture: 62.0, pumpOn: false, flowRate: 9.5
+            },
+            {
+                id: "LO_06", name: "Lô 06", area: "0.67 Ha", crop: "Starmaya & THA1", year: "2020", trees: "2,737 cây", spacing: "1 x 2 m", rows: "52 hàng", note: "Gồm LO_06.1 (711 cây) & LO_06.2 (2026 cây)",
+                points: "276,512 338,468 368,512 305,555", center: { x: 322, y: 512 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 24.8, moisture: 70.1, pumpOn: false, flowRate: 10.0
+            },
+            {
+                id: "LO_07", name: "Lô 07", area: "0.60 Ha", crop: "Cà phê THA1", year: "2020", trees: "2,009 cây", spacing: "1 x 2 m", rows: "38 hàng", note: "Trung tâm sườn giữa trang trại",
+                points: "378,488 432,452 505,518 435,575", center: { x: 438, y: 512 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 25.9, moisture: 57.5, pumpOn: false, flowRate: 19.0
+            },
+            {
+                id: "LO_07.1", name: "Vườn ươm", area: "0.18 Ha", crop: "Vườn Ươm & Cây ăn quả", year: "2023", trees: "70 cây ăn quả + Vườn ươm", spacing: "Tiêu chuẩn", rows: "-", note: "0.08Ha Cây ăn quả + 0.10Ha Vườn ươm",
+                points: "400,360 475,315 525,370 450,415", center: { x: 462, y: 365 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 24.8, moisture: 75.0, pumpOn: false, flowRate: 10.0, customColor: "#72b07d"
+            },
+            {
+                id: "LO_08.2", name: "Lô 08.2", area: "0.41 Ha", crop: "Cà phê Catimor", year: "2020", trees: "2,190 cây", spacing: "0.9 x 1.5 m", rows: "37 hàng", note: "Mật độ trồng dày 0.9x1.5m",
+                points: "255,465 320,420 360,475 295,525", center: { x: 358, y: 566 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 24.9, moisture: 63.4, pumpOn: false, flowRate: 15.0
+            },
+            {
+                id: "LO_08.1", name: "Lô 08.1", area: "0.32 Ha", crop: "Cà phê THA1", year: "2023", trees: "1,149 cây", spacing: "1.2 x 1.7 m", rows: "46 hàng", note: "Nằm giữa Lô 08-2 và Lô 10",
+                points: "300,530 365,480 405,535 340,585", center: { x: 396, y: 620 }, waterSource: { x: 275, y: 440, name: "Bể Nước" }, temp: 25.0, moisture: 64.0, pumpOn: false, flowRate: 13.5
+            },
+            {
+                id: "LO_09.1", name: "Lô 09.1", area: "0.18 Ha", crop: "Cà phê Starmaya", year: "2020", trees: "703 cây", spacing: "1 x 2 m", rows: "43 hàng", note: "Dải lô 09 phía Tây Nam",
+                points: "458,625 488,605 538,685 508,708", center: { x: 498, y: 656 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 24.9, moisture: 65.5, pumpOn: false, flowRate: 9.0
+            },
+            {
+                id: "LO_09.2", name: "Lô 09.2", area: "0.28 Ha", crop: "Cà phê Marsellesa", year: "2020", trees: "1,210 cây", spacing: "1 x 2 m", rows: "46 hàng", note: "Giống cà phê đặc sản Marsellesa",
+                points: "490,602 520,578 575,655 542,682", center: { x: 532, y: 630 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 24.6, moisture: 69.0, pumpOn: false, flowRate: 12.0
+            },
+            {
+                id: "LO_09.3", name: "Lô 09.3", area: "0.26 Ha", crop: "Cà phê THA1", year: "2020", trees: "833 cây", spacing: "1 x 2 m", rows: "41 hàng", note: "Giáp hồ điều hòa",
+                points: "522,575 552,552 608,625 578,652", center: { x: 565, y: 604 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 24.7, moisture: 67.3, pumpOn: false, flowRate: 11.5
+            },
+            {
+                id: "LO_09.4", name: "Lô 09.4", area: "0.24 Ha", crop: "Cà phê H1", year: "2021", trees: "1,112 cây", spacing: "1 x 2 m", rows: "42 hàng", note: "Phía Bắc cụm lô 09, giống H1",
+                points: "548,548 602,515 638,565 588,595", center: { x: 594, y: 556 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 25.2, moisture: 64.8, pumpOn: false, flowRate: 11.0
+            },
+            {
+                id: "LO_10", name: "Lô 10", area: "0.63 Ha", crop: "Cà phê THA1", year: "2023", trees: "2,262 cây", spacing: "1.2 x 1.7 m", rows: "45 hàng", note: "Cực Tây Nam của trang trại",
+                points: "385,675 452,628 505,705 462,795 425,752", center: { x: 448, y: 708 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 25.4, moisture: 59.2, pumpOn: false, flowRate: 20.0
+            },
+            {
+                id: "LO_11", name: "Lô 11-2", area: "0.37 Ha", crop: "Cà phê THA1", year: "2025", trees: "452 cây", spacing: "1 x 2 m", rows: "14 hàng", note: "Trên bản đồ ký hiệu 11-2, trồng mới 2025",
+                points: "618,578 665,542 752,542 642,612", center: { x: 668, y: 568 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 24.4, moisture: 71.2, pumpOn: false, flowRate: 11.0
+            },
+            {
+                id: "LO_11.1", name: "Lô 11.1", area: "0.55 Ha", crop: "Cây ăn quả", year: "2025", trees: "300 cây", spacing: "Quy hoạch", rows: "-", note: "Khu cây ăn quả phía Đông Hồ nước",
+                points: "732,578 785,545 835,638 752,692", center: { x: 778, y: 618 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 24.1, moisture: 74.0, pumpOn: true, flowRate: 17.5
+            },
+            {
+                id: "LO_13", name: "Lô 13", area: "0.20 Ha", crop: "Cà phê THA1", year: "2024 - 2025", trees: "660 cây", spacing: "1.2 x 1.7 m", rows: "-", note: "Gồm LO_13.1 (0.16Ha) & LO_13.2 (0.04Ha)",
+                points: "482,762 562,708 582,738 492,792", center: { x: 530, y: 748 }, waterSource: { x: 678, y: 662, name: "Hồ nước" }, temp: 25.5, moisture: 60.5, pumpOn: false, flowRate: 8.5
+            }
+        ];
 
-    let currentAmbientTemp = 23.5;
-    let currentModalPlotId = null;
+        const supportZonesInfo = {
+            factory: { title: "Công Ty Cổ Phần Phúc Sinh Sơn La", type: "Nhà máy chế biến & Điều hành", desc: "Khu phức hợp nhà máy chế biến cà phê Arabica Sơn La công nghệ cao." },
+            wastewater: { title: "Khu Xử Lý Nước Thải", type: "Hạ tầng môi trường", desc: "Hệ thống xử lý nước thải đạt chuẩn hữu cơ." },
+            nursery: { title: "Vườn Ươm Giống", type: "Khu ươm cây giống", desc: "Ươm giống cà phê Arabica chất lượng cao." },
+            mountain_hill: { title: "Mountain Hill", type: "Điểm cảnh quan", desc: "Đồi cảnh quan đặc trưng của nông trại." },
+            water_tank: { title: "Bể Nước Trung Tâm", type: "Trạm cấp nước Khu A", desc: "Cấp nước trực tiếp cho các lô 01 -> 08." },
+            water_lake: { title: "Hồ Nước Tự Nhiên", type: "Trạm cấp nước Khu B", desc: "Cấp nước cho cụm lô 09, 10, 11, 13." },
+            pine: { title: "Rừng Thông Sinh Thái", type: "Đai rừng chắn gió", desc: "Bảo vệ hệ sinh thái và giữ ẩm tự nhiên." },
+            byproduct: { title: "Khu Tập Kết Phụ Phẩm", type: "Ủ phân hữu cơ", desc: "Tập kết vỏ cà phê tuần hoàn làm phân bón." }
+        };
 
-    function getPolygonCentroid(pointsStr) {
-      const pts = pointsStr.trim().split(/\s+/).map(pair => pair.split(',').map(Number));
-      let x = 0, y = 0;
-      pts.forEach(p => { x += p[0]; y += p[1]; });
-      return [Math.round(x / pts.length), Math.round(y / pts.length)];
-    }
+        let currentDisplayMode = 'all';
+        let selectedPlotId = "LO_03";
+        let autoIrrigationEnabled = false;
+        let activeLegendCategory = null;
+        let rainSimulationActive = false;
 
-    function renderFarmMap() {
-      const plotsLayer = document.getElementById('plots-layer');
-      const pipesLayer = document.getElementById('pipes-layer');
-      const sidebarList = document.getElementById('sidebar-plot-list');
+        let zoomLevel = 1, panX = 0, panY = 0, isDraggingMap = false, dragStartX = 0, dragStartY = 0;
 
-      plotsLayer.innerHTML = '';
-      pipesLayer.innerHTML = '';
-      sidebarList.innerHTML = '';
+        function renderFarmMap() {
+            const plotsLayer = document.getElementById('coffeePlotsLayer');
+            const overlaysLayer = document.getElementById('plotOverlaysLayer');
+            const pipelinesLayer = document.getElementById('waterPipelinesLayer');
 
-      let activePumpCount = 0;
+            plotsLayer.innerHTML = '';
+            overlaysLayer.innerHTML = '';
+            pipelinesLayer.innerHTML = '';
 
-      PLOTS_DATA.forEach(plot => {
-        if (plot.pumping) activePumpCount++;
-        const [cx, cy] = getPolygonCentroid(plot.points);
+            coffeePlotsData.forEach(plot => {
+                const isSelected = plot.id === selectedPlotId;
+                const hasAlert = plot.moisture < 45 || plot.temp > 31;
 
-        // 1. Đường ống nước ngầm
-        const pipe = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        const [sx, sy] = plot.waterSource;
-        const midX = Math.round((sx + cx) / 2);
-        pipe.setAttribute("d", `M ${sx} ${sy} Q ${midX} ${sy} ${cx} ${cy}`);
-        pipe.setAttribute("class", `water-pipe ${plot.pumping ? 'active' : ''}`);
-        pipesLayer.appendChild(pipe);
+                let fillStyle = plot.customColor ? plot.customColor : "url(#coffeeTexture)";
+                if (currentDisplayMode === 'temp') {
+                    fillStyle = plot.temp >= 30 ? 'rgba(239, 68, 68, 0.82)' : (plot.temp >= 26 ? 'rgba(245, 158, 11, 0.82)' : 'rgba(16, 185, 129, 0.82)');
+                } else if (currentDisplayMode === 'moisture') {
+                    fillStyle = plot.moisture < 45 ? 'rgba(245, 158, 11, 0.85)' : (plot.moisture > 75 ? 'rgba(14, 165, 233, 0.85)' : 'rgba(34, 197, 94, 0.82)');
+                }
 
-        // 2. Đa giác lô
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.onclick = () => openPlotModal(plot.id);
+                if (plot.pumpOn) {
+                    const pipeLine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    const midX = (plot.waterSource.x + plot.center.x) / 2;
+                    const midY = (plot.waterSource.y + plot.center.y) / 2 - 15;
+                    pipeLine.setAttribute("d", `M ${plot.waterSource.x},${plot.waterSource.y} Q ${midX},${midY} ${plot.center.x},${plot.center.y}`);
+                    pipeLine.setAttribute("fill", "none");
+                    pipeLine.setAttribute("stroke", "#38bdf8");
+                    pipeLine.setAttribute("stroke-width", "3.5");
+                    pipeLine.setAttribute("class", "water-pipe-active");
+                    pipelinesLayer.appendChild(pipeLine);
+                }
 
-        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-        poly.setAttribute("points", plot.points);
-        poly.setAttribute("class", `plot-poly ${plot.pumping ? 'pumping' : ''}`);
+                const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                poly.setAttribute("points", plot.points);
+                poly.setAttribute("fill", fillStyle);
+                poly.setAttribute("stroke", "#bbf7d0");
+                poly.setAttribute("stroke-width", "1.6");
+                
+                let cls = "farm-zone";
+                if (isSelected) cls += " selected-zone";
+                if (plot.pumpOn) cls += " pump-active";
+                if (hasAlert) cls += " sensor-alert";
+                if (activeLegendCategory && activeLegendCategory !== 'coffee') cls += " dimmed-zone";
 
-        let fillColor = plot.customColor || "#22c55e";
-        if (plot.pumping) {
-          fillColor = "#0284c7";
-        } else if (plot.soilMoisture < 56) {
-          fillColor = "#ca8a04";
+                poly.setAttribute("class", cls);
+                poly.onclick = (e) => {
+                    e.stopPropagation();
+                    openPlotModal(plot.id);
+                };
+                plotsLayer.appendChild(poly);
+
+                if (plot.pumpOn) {
+                    const r1 = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    r1.setAttribute("cx", plot.center.x); r1.setAttribute("cy", plot.center.y);
+                    r1.setAttribute("fill", "none"); r1.setAttribute("stroke", "#7dd3fc"); r1.setAttribute("class", "ripple-circle");
+                    overlaysLayer.appendChild(r1);
+                }
+
+                const badgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                badgeGroup.setAttribute("transform", `translate(${plot.center.x}, ${plot.center.y})`);
+                badgeGroup.setAttribute("filter", "url(#badgeShadow)");
+
+                badgeGroup.innerHTML = `
+                    <text x="0" y="-12" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="800">${plot.id} <tspan font-size="9" fill="#dcfce7">(${plot.area})</tspan></text>
+                    <rect x="-40" y="-7" width="80" height="20" rx="6" fill="${plot.pumpOn ? '#0284c7' : 'rgba(15, 23, 42, 0.86)'}" stroke="${plot.pumpOn ? '#7dd3fc' : '#334155'}" stroke-width="1.2"/>
+                    <text x="0" y="6" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="700" font-family="JetBrains Mono">
+                        <tspan fill="#fbbf24">${plot.temp.toFixed(1)}°</tspan> | <tspan fill="#38bdf8">${plot.moisture.toFixed(0)}%</tspan>
+                    </text>
+                    ${plot.pumpOn ? '<circle cx="34" cy="-15" r="7" fill="#0ea5e9"/><path d="M31,-15 L37,-15 M34,-18 L34,-12" stroke="#fff" stroke-width="1.5" class="spin-pump"/>' : ''}
+                `;
+                overlaysLayer.appendChild(badgeGroup);
+            });
+
+            updateTopKPIBadges();
         }
-        poly.setAttribute("fill", fillColor);
-        poly.setAttribute("fill-opacity", "0.52"); // Độ trong suốt chuẩn để tệp khít vạt màu nền vệ tinh
-        g.appendChild(poly);
 
-        // 3. Nhãn tên và cảm biến
-        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        label.setAttribute("x", cx);
-        label.setAttribute("y", cy - 4);
-        label.setAttribute("class", "plot-label");
-        label.textContent = `${plot.mapLabel} (${plot.area}Ha)`;
-        g.appendChild(label);
+        function renderPlotControlList() {
+            const listEl = document.getElementById('plotControlList');
+            const query = (document.getElementById('plotSearchInput')?.value || '').trim().toLowerCase();
 
-        const sensorTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        sensorTxt.setAttribute("x", cx);
-        sensorTxt.setAttribute("y", cy + 8);
-        sensorTxt.setAttribute("class", "sensor-pill");
-        sensorTxt.textContent = `${plot.pumping ? '💦 ĐANG TƯỚI' : '💧 ' + plot.soilMoisture + '%'}`;
-        g.appendChild(sensorTxt);
+            const filteredPlots = coffeePlotsData.filter(p => 
+                p.id.toLowerCase().includes(query) || p.name.toLowerCase().includes(query) || p.crop.toLowerCase().includes(query)
+            );
 
-        plotsLayer.appendChild(g);
-
-        // 4. Dòng trạng thái trong sidebar
-        const item = document.createElement('div');
-        item.className = 'mini-plot-row';
-        item.innerHTML = `
-          <div class="mini-plot-info" onclick="openPlotModal('${plot.id}')">
-            <strong>Lô ${plot.mapLabel} (${plot.id})</strong>
-            <span>${plot.area} Ha • Ẩm: <b>${plot.soilMoisture}%</b></span>
-          </div>
-          <button class="pump-switch ${plot.pumping ? 'on' : ''}" onclick="event.stopPropagation(); togglePump('${plot.id}')">
-            ${plot.pumping ? 'BƠM: BẬT' : 'BƠM: TẮT'}
-          </button>
-        `;
-        sidebarList.appendChild(item);
-      });
-
-      document.getElementById('active-pumps-count').textContent = `${activePumpCount} / ${PLOTS_DATA.length} lô`;
-    }
-
-    function togglePump(plotId) {
-      const plot = PLOTS_DATA.find(p => p.id === plotId);
-      if (!plot) return;
-      plot.pumping = !plot.pumping;
-      if (plot.pumping && plot.soilMoisture < 85) {
-        plot.soilMoisture = Math.min(92, plot.soilMoisture + 6);
-      }
-      renderFarmMap();
-      if (currentModalPlotId === plotId) openPlotModal(plotId);
-    }
-
-    function toggleAllPumps() {
-      const anyOn = PLOTS_DATA.some(p => p.pumping);
-      PLOTS_DATA.forEach(p => p.pumping = !anyOn);
-      renderFarmMap();
-    }
-
-    function openPlotModal(id) {
-      currentModalPlotId = id;
-      const modal = document.getElementById('plot-modal');
-      const titleEl = document.getElementById('m-title');
-      const subEl = document.getElementById('m-subtitle');
-      const tableEl = document.getElementById('m-table');
-      const sensorBox = document.getElementById('m-sensor-box');
-      const pumpBtn = document.getElementById('m-pump-btn');
-
-      const plot = PLOTS_DATA.find(p => p.id === id);
-
-      if (plot) {
-        sensorBox.style.display = 'grid';
-        pumpBtn.style.display = 'inline-flex';
-        const plotTemp = (currentAmbientTemp + plot.tempOffset).toFixed(1);
-
-        titleEl.textContent = `Lô ${plot.id} (Bản đồ: ${plot.mapLabel})`;
-        subEl.textContent = `Dữ liệu canh tác hữu cơ & cảm biến IoT`;
-
-        document.getElementById('m-soil').textContent = `${plot.soilMoisture} %`;
-        document.getElementById('m-temp').textContent = `${plotTemp} °C`;
-        const pumpStateEl = document.getElementById('m-pump-state');
-        pumpStateEl.textContent = plot.pumping ? '💦 ĐANG TƯỚI' : 'ĐANG TẮT';
-        pumpStateEl.style.color = plot.pumping ? '#22c55e' : '#94a3b8';
-
-        pumpBtn.textContent = plot.pumping ? '🛑 Tắt máy bơm' : '💦 Bật máy bơm';
-        pumpBtn.className = `btn ${plot.pumping ? 'active' : ''}`;
-
-        tableEl.innerHTML = `
-          <tr><th>Mã lô</th><td>${plot.id}</td></tr>
-          <tr><th>Diện tích</th><td>${plot.area} Ha</td></tr>
-          <tr><th>Giống cây</th><td>${plot.crop}</td></tr>
-          <tr><th>Năm trồng</th><td>${plot.year}</td></tr>
-          <tr><th>Số lượng cây</th><td>${plot.trees}</td></tr>
-          <tr><th>Khoảng cách</th><td>${plot.spacing}</td></tr>
-          <tr><th>Số hàng</th><td>${plot.rows}</td></tr>
-          <tr><th>Ghi chú</th><td>${plot.note}</td></tr>
-        `;
-      } else if (EXTRA_ZONES[id]) {
-        const z = EXTRA_ZONES[id];
-        sensorBox.style.display = 'none';
-        pumpBtn.style.display = 'none';
-        titleEl.textContent = z.title;
-        subEl.textContent = `Thông tin phân khu chức năng`;
-        tableEl.innerHTML = `
-          <tr><th>Hạng mục</th><td>${z.crop}</td></tr>
-          <tr><th>Diện tích</th><td>${z.area}</td></tr>
-          <tr><th>Năm trồng</th><td>${z.year}</td></tr>
-          <tr><th>Số cây</th><td>${z.trees}</td></tr>
-          <tr><th>Ghi chú</th><td>${z.note}</td></tr>
-        `;
-      }
-
-      modal.classList.add('open');
-    }
-
-    function toggleCurrentModalPump() {
-      if (currentModalPlotId) togglePump(currentModalPlotId);
-    }
-
-    function closePlotModal() {
-      document.getElementById('plot-modal').classList.remove('open');
-      currentModalPlotId = null;
-    }
-
-    function randomizeSensors() {
-      PLOTS_DATA.forEach(p => {
-        if (p.pumping) {
-          p.soilMoisture = Math.min(95, p.soilMoisture + Math.floor(Math.random() * 4 + 1));
-        } else {
-          const delta = Math.floor(Math.random() * 5) - 2;
-          p.soilMoisture = Math.max(42, Math.min(88, p.soilMoisture + delta));
+            listEl.innerHTML = filteredPlots.map(plot => `
+                <div onclick="openPlotModal('${plot.id}')" class="p-3 rounded-xl border transition cursor-pointer ${plot.pumpOn ? 'bg-sky-950/40 border-cyan-500/60' : 'bg-slate-800/40 border-slate-800 hover:border-slate-700'}">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-lg flex items-center justify-center font-mono font-bold text-xs ${plot.pumpOn ? 'bg-cyan-500 text-slate-950' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'}">
+                                ${plot.id}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-xs text-white">${plot.name}</h4>
+                                    <span class="text-[10px] font-mono px-1.5 bg-slate-700 text-slate-300 rounded">${plot.area}</span>
+                                    ${plot.pumpOn ? '<span class="text-[10px] text-cyan-300 bg-cyan-500/20 px-1 rounded animate-pulse">Đang tưới</span>' : ''}
+                                </div>
+                                <div class="flex items-center gap-3 mt-1 text-[11px] font-mono">
+                                    <span class="text-amber-400"><i class="fa-solid fa-temperature-half mr-0.5"></i>${plot.temp.toFixed(1)}°C</span>
+                                    <span class="text-sky-400"><i class="fa-solid fa-droplet mr-0.5"></i>${plot.moisture.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="event.stopPropagation(); togglePlotPump('${plot.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${plot.pumpOn ? 'bg-cyan-500 text-slate-950' : 'bg-slate-700 text-slate-200'}">
+                            ${plot.pumpOn ? 'BẬT' : 'TẮT'}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
         }
-      });
-      renderFarmMap();
-      if (currentModalPlotId && PLOTS_DATA.some(p => p.id === currentModalPlotId)) openPlotModal(currentModalPlotId);
-    }
 
-    async function fetchChiengMungWeather() {
-      const url = "https://api.open-meteo.com/v1/forecast?latitude=21.254283&longitude=103.960983&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia%2FBangkok";
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data && data.current) {
-          currentAmbientTemp = data.current.temperature_2m;
-          document.getElementById('w-temp').textContent = `${data.current.temperature_2m} °C`;
-          document.getElementById('w-hum').textContent = `${data.current.relative_humidity_2m} %`;
-          document.getElementById('w-wind').textContent = `${data.current.wind_speed_10m} km/h`;
-          document.getElementById('w-rain').textContent = `${data.current.precipitation} mm`;
-          document.getElementById('weather-desc').textContent = "Thời tiết thực tế tại Bản Mạt, Chiềng Mung";
+        /**
+         * POPUP MODAL THÔNG TIN LÔ (XỬ LÝ DỮ LIỆU CHUẨN TỪ FILE EXCEL)
+         */
+        let modalActivePlotId = null;
+
+        function openPlotModal(plotId) {
+            modalActivePlotId = plotId;
+            selectedPlotId = plotId;
+            const plot = coffeePlotsData.find(p => p.id === plotId);
+            if (!plot) return;
+
+            document.getElementById('modalPlotTitle').textContent = `${plot.name} (${plot.id})`;
+            document.getElementById('modalSoilVal').textContent = `${plot.moisture.toFixed(1)}%`;
+            document.getElementById('modalTempVal').textContent = `${plot.temp.toFixed(1)}°C`;
+            
+            const pumpValEl = document.getElementById('modalPumpVal');
+            pumpValEl.textContent = plot.pumpOn ? 'ĐANG TƯỚI' : 'ĐANG TẮT';
+            pumpValEl.className = plot.pumpOn ? 'text-xs font-bold mt-1 block px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' : 'text-xs font-bold mt-1 block px-2 py-0.5 rounded bg-slate-800 text-slate-300';
+
+            const toggleBtn = document.getElementById('modalPumpToggleBtn');
+            toggleBtn.innerHTML = `<i class="fa-solid ${plot.pumpOn ? 'fa-power-off' : 'fa-faucet-drip'}"></i> ${plot.pumpOn ? 'Tắt Máy Bơm Lô Này' : 'Bật Máy Bơm Lô Này'}`;
+            toggleBtn.className = plot.pumpOn ? 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 transition shadow' : 'px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-2 transition shadow';
+
+            // Fill Excel details into table
+            const tbody = document.getElementById('modalExcelTableBody');
+            tbody.innerHTML = `
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Mã Lô (Bảng Kê)</td><td class="px-3 py-2 font-mono text-white font-bold">${plot.id}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Diện Tích Hữu Cơ</td><td class="px-3 py-2 text-emerald-400 font-bold">${plot.area}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Giống Cây Trồng</td><td class="px-3 py-2 text-white">${plot.crop}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Năm Trồng</td><td class="px-3 py-2 text-white">${plot.year}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Số Lượng Cây</td><td class="px-3 py-2 text-white font-bold">${plot.trees}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Khoảng Cách Trồng</td><td class="px-3 py-2 text-white">${plot.spacing}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Số Hàng Trồng</td><td class="px-3 py-2 text-white">${plot.rows}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Ghi Chú Thực Địa</td><td class="px-3 py-2 text-amber-300">${plot.note}</td></tr>
+                <tr><td class="px-3 py-2 text-slate-400 font-medium">Nguồn Nước Cấp</td><td class="px-3 py-2 text-sky-300 font-bold"><i class="fa-solid fa-water mr-1"></i>${plot.waterSource.name}</td></tr>
+            `;
+
+            document.getElementById('plotModal').classList.remove('hidden');
+            document.getElementById('plotModal').classList.add('flex');
+            renderFarmMap();
+            renderPlotControlList();
         }
-      } catch (e) {
-        document.getElementById('weather-desc').textContent = "Chế độ Offline (Thời tiết Chiềng Mung)";
-        document.getElementById('w-temp').textContent = "24.2 °C";
-        document.getElementById('w-hum').textContent = "72 %";
-        document.getElementById('w-wind').textContent = "8.4 km/h";
-      }
-    }
 
-    renderFarmMap();
-    fetchChiengMungWeather();
-    setInterval(randomizeSensors, 7000);
-    setInterval(fetchChiengMungWeather, 300000);
-  </script>
+        function closePlotModal() {
+            document.getElementById('plotModal').classList.add('hidden');
+            document.getElementById('plotModal').classList.remove('flex');
+        }
+
+        function toggleModalPlotPump() {
+            if (!modalActivePlotId) return;
+            togglePlotPump(modalActivePlotId);
+            openPlotModal(modalActivePlotId); // Refresh modal view
+        }
+
+        function togglePlotPump(plotId) {
+            const plot = coffeePlotsData.find(p => p.id === plotId);
+            if (!plot) return;
+            plot.pumpOn = !plot.pumpOn;
+            renderFarmMap();
+            renderPlotControlList();
+        }
+
+        function toggleAllPumps(turnOn) {
+            coffeePlotsData.forEach(p => p.pumpOn = turnOn);
+            renderFarmMap();
+            renderPlotControlList();
+        }
+
+        function setMapDisplayMode(mode) {
+            currentDisplayMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.className = "mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:bg-slate-800 transition");
+            document.getElementById(`mode-${mode}`).className = "mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow transition";
+            renderFarmMap();
+        }
+
+        function updateTopKPIBadges() {
+            const activePumps = coffeePlotsData.filter(p => p.pumpOn).length;
+            const avgTemp = coffeePlotsData.reduce((acc, p) => acc + p.temp, 0) / coffeePlotsData.length;
+            const avgMoist = coffeePlotsData.reduce((acc, p) => acc + p.moisture, 0) / coffeePlotsData.length;
+
+            document.getElementById('activePumpCountBadge').textContent = `${activePumps}/${coffeePlotsData.length}`;
+            document.getElementById('avgTempBadge').textContent = `${avgTemp.toFixed(1)}°C`;
+            document.getElementById('avgMoistureBadge').textContent = `${avgMoist.toFixed(1)}%`;
+        }
+
+        /**
+         * REAL-TIME WEATHER FOR CHIỀNG MUNG - SƠN LA (21.254283, 103.960983)
+         */
+        async function fetchRealWeather(manualTrigger = false) {
+            try {
+                const url = "https://api.open-meteo.com/v1/forecast?latitude=21.254283&longitude=103.960983&current=temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m&timezone=Asia%2FBangkok";
+                const response = await fetch(url);
+                const data = await response.json();
+                const cur = data.current;
+
+                document.getElementById('weatherTemp').textContent = `${cur.temperature_2m.toFixed(1)}°C`;
+                document.getElementById('weatherHum').innerHTML = `<i class="fa-solid fa-droplet mr-1"></i>${cur.relative_humidity_2m}%`;
+                document.getElementById('weatherWind').innerHTML = `<i class="fa-solid fa-wind mr-1 text-slate-400"></i>${cur.wind_speed_10m} km/h`;
+                document.getElementById('weatherRain').innerHTML = `<i class="fa-solid fa-cloud-rain mr-1"></i>${cur.precipitation} mm`;
+                document.getElementById('weatherDesc').textContent = cur.temperature_2m > 25 ? "Nắng ráo" : "Mát mẻ";
+            } catch (err) {
+                document.getElementById('weatherTemp').textContent = "24.5°C";
+                document.getElementById('weatherHum').innerHTML = '<i class="fa-solid fa-droplet mr-1"></i>72%';
+                document.getElementById('weatherWind').innerHTML = '<i class="fa-solid fa-wind mr-1 text-slate-400"></i>8.2 km/h';
+                document.getElementById('weatherDesc').textContent = "Trời quang mây";
+            }
+        }
+
+        function toggleRainEffect() {
+            rainSimulationActive = !rainSimulationActive;
+            const rainLayer = document.getElementById('weatherEffectLayer');
+            const btn = document.getElementById('btnRainSim');
+            if (rainSimulationActive) {
+                rainLayer.classList.remove('hidden');
+                btn.className = "px-2 py-0.5 rounded bg-sky-500 text-slate-950 text-[11px] font-bold transition";
+                document.getElementById('weatherDesc').textContent = "Đang mưa (Giả lập)";
+                let lines = '';
+                for (let i = 0; i < 40; i++) {
+                    lines += `<line x1="${Math.random()*1100}" y1="${Math.random()*600}" x2="${Math.random()*1100 - 15}" y2="${Math.random()*600 + 40}" stroke="#7dd3fc" stroke-width="1.5" stroke-opacity="0.6" class="rain-line"/>`;
+                }
+                rainLayer.innerHTML = lines;
+            } else {
+                rainLayer.classList.add('hidden');
+                btn.className = "px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-[11px] font-medium text-slate-200 transition";
+                fetchRealWeather();
+            }
+        }
+
+        function simulateDrySpell() {
+            coffeePlotsData.forEach(p => {
+                if (["LO_01", "LO_03", "LO_07", "LO_10"].includes(p.id)) {
+                    p.moisture = 38 + Math.random() * 5;
+                    p.temp = 31.5;
+                }
+            });
+            renderFarmMap();
+            renderPlotControlList();
+        }
+
+        function filterByCategory(cat) {
+            activeLegendCategory = activeLegendCategory === cat ? null : cat;
+            document.getElementById('btnResetLegend').classList.toggle('hidden', !activeLegendCategory);
+            renderFarmMap();
+        }
+        function resetLegendFilter() {
+            activeLegendCategory = null;
+            document.getElementById('btnResetLegend').classList.add('hidden');
+            renderFarmMap();
+        }
+        function switchSidebarTab(tab) {
+            ['control', 'detail', 'brand'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+            });
+        }
+        function toggleBrandingDrawer() {
+            document.getElementById('rightControlSidebar').classList.toggle('translate-x-full');
+        }
+
+        // Zoom & Pan
+        function updateMapTransform() {
+            document.getElementById('farmSvg').style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+        }
+        function zoomMap(factor) {
+            zoomLevel = Math.min(3.2, Math.max(0.75, zoomLevel * factor));
+            updateMapTransform();
+        }
+        function resetMapView() { zoomLevel = 1; panX = 0; panY = 0; updateMapTransform(); }
+
+        const viewport = document.getElementById('mapViewport');
+        viewport.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.farm-zone')) return;
+            isDraggingMap = true; dragStartX = e.clientX - panX; dragStartY = e.clientY - panY;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingMap) return;
+            panX = e.clientX - dragStartX; panY = e.clientY - dragStartY; updateMapTransform();
+        });
+        window.addEventListener('mouseup', () => isDraggingMap = false);
+        viewport.addEventListener('wheel', (e) => { e.preventDefault(); zoomMap(e.deltaY < 0 ? 1.1 : 0.9); }, { passive: false });
+
+        // Real-time loop
+        setInterval(() => {
+            coffeePlotsData.forEach(p => {
+                if (p.pumpOn || rainSimulationActive) {
+                    p.moisture = Math.min(95, p.moisture + (p.pumpOn ? 0.8 : 0.4));
+                    p.temp = Math.max(19.5, p.temp - 0.05);
+                } else {
+                    p.temp = Math.max(16, Math.min(36, p.temp + (Math.random() - 0.5) * 0.1));
+                    p.moisture = Math.max(25, p.moisture - 0.04);
+                }
+            });
+            renderFarmMap();
+            renderPlotControlList();
+        }, 2500);
+
+        window.updatePhucSinhPlot = function(payload) {
+            if (!payload || !payload.plotId) return false;
+            const plot = coffeePlotsData.find(p => p.id === String(payload.plotId));
+            if (!plot) return false;
+            if (typeof payload.temperature === 'number') plot.temp = payload.temperature;
+            if (typeof payload.moisture === 'number') plot.moisture = payload.moisture;
+            if (typeof payload.pumpStatus === 'boolean') plot.pumpOn = payload.pumpStatus;
+            renderFarmMap();
+            renderPlotControlList();
+            return true;
+        };
+
+        function openIoTModal() { document.getElementById('iotModal').classList.remove('hidden'); document.getElementById('iotModal').classList.add('flex'); }
+        function closeIoTModal() { document.getElementById('iotModal').classList.add('hidden'); document.getElementById('iotModal').classList.remove('flex'); }
+
+        window.onload = function() {
+            renderFarmMap();
+            renderPlotControlList();
+            fetchRealWeather();
+        };
+    </script>
 </body>
 </html>
